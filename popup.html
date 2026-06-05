@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flickr AI Tagger Gemini</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 380px;
+      font-family: system-ui, 'Segoe UI', sans-serif;
+      font-size: 13px; color: #1a1a1a; background: #fff; padding: 14px;
+    }
+    h1 { font-size: 13px; font-weight: 600; color: #111; margin-bottom: 12px; }
+
+    #status { font-size: 12px; color: #666; padding: 10px 0; text-align: center; }
+    #status.error   { color: #c00; }
+    #status.success { color: #276749; }
+    #status.warning { color: #7c4a00; background: #fffbea; border: 1px solid #f6c843; border-radius: 6px; padding: 8px 12px; }
+
+    /* Key setup */
+    #key-setup { display: none; }
+    #key-setup p { font-size: 12px; color: #555; margin-bottom: 10px; line-height: 1.5; }
+    #key-setup a { color: #4285f4; }
+    #key-setup input {
+      width: 100%; font-family: monospace; font-size: 12px; padding: 7px 10px;
+      border: 1px solid #ccc; border-radius: 6px; outline: none; margin-bottom: 8px;
+    }
+    #key-setup input:focus { border-color: #4285f4; }
+
+    #main-ui { display: none; }
+
+    #photo-wrap {
+      display: none; background: #111; border-radius: 8px; overflow: hidden;
+      margin-bottom: 8px; text-align: center; min-height: 100px; max-height: 260px;
+    }
+    #photo-wrap img { max-width: 100%; max-height: 260px; object-fit: contain; display: block; margin: 0 auto; }
+    #location { font-size: 11px; color: #666; text-align: center; margin-bottom: 8px; }
+
+    #tags-wrap {
+      display: none; border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 10px 12px; margin-bottom: 10px; min-height: 60px;
+    }
+    #tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+    .tag { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; font-size: 12px; }
+    .tag.existing { background: #e8f0fe; border: 1px solid #93b4f5; color: #1a3a7a; padding: 3px 12px; cursor: default; }
+    .tag.kept     { background: #f3ecff; border: 1px solid #c9a0f5; color: #3d0066; padding: 3px 10px 3px 12px; }
+    .tag.new      { background: #fff8e1; border: 1px solid #f6c843; color: #5a3e00; padding: 3px 10px 3px 12px; }
+    .tag button   { background: none; border: none; padding: 0; cursor: pointer; font-size: 15px; line-height: 1; font-weight: 700; }
+    .tag.kept button { color: #9b59d0; }
+    .tag.new  button { color: #c9a230; }
+    .tag button:hover { color: #c00; }
+
+    .tag-section-label {
+      width: 100%; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #999; margin-bottom: 4px; margin-top: 8px;
+    }
+    .tag-section-label:first-child { margin-top: 0; }
+
+    #add-row { display: flex; gap: 6px; }
+    #add-row input {
+      flex: 1; font-family: inherit; font-size: 12px; padding: 5px 10px;
+      border: 1px solid #ccc; border-radius: 6px; outline: none;
+    }
+    #add-row input:focus { border-color: #9b59d0; }
+    #add-row button {
+      font-family: inherit; font-size: 12px; padding: 5px 12px;
+      border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer;
+    }
+
+    .row { display: flex; gap: 8px; margin-bottom: 8px; }
+    button.primary {
+      flex: 1; font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 9px 0; border: none; border-radius: 8px;
+      background: #4285f4; color: #fff; cursor: pointer;
+    }
+    button.primary:disabled { opacity: 0.5; cursor: default; }
+    button.primary:hover:not(:disabled) { background: #3367d6; }
+
+    #change-key-btn, #clear-cache-btn {
+      font-family: inherit; font-size: 11px; color: #999; background: none;
+      border: none; cursor: pointer; padding: 4px 0;
+    }
+    #change-key-btn:hover { color: #4285f4; }
+    #clear-cache-btn:hover { color: #e53e3e; }
+
+    #copy-row { display: none; margin-top: 2px; }
+    #tag-line {
+      width: 100%; font-family: monospace; font-size: 11px; padding: 6px 10px;
+      border: 1px solid #ddd; border-radius: 6px; background: #f8f8f8; color: #333;
+      margin-bottom: 6px; resize: none; min-height: 100px; line-height: 1.5;
+    }
+    #copy-btn {
+      width: 100%; font-family: inherit; font-size: 12px; padding: 7px 0;
+      border: 1px solid #4285f4; border-radius: 6px;
+      background: #e8f0fe; color: #4285f4; cursor: pointer; font-weight: 500;
+    }
+    #copy-btn:hover { background: #d2e3fc; }
+    #copy-btn.copied { background: #d4edda; border-color: #38a169; color: #276749; }
+  </style>
+</head>
+<body>
+  <h1>Flickr AI Tagger — Gemini</h1>
+  <div id="status"></div>
+
+  <!-- API key setup -->
+  <div id="key-setup">
+    <p>Enter your Google AI Studio API key.<br>
+    Get one free at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> → Get API key.</p>
+    <input id="api-key-input" type="password" placeholder="Paste API key here…">
+    <button class="primary" id="save-key-btn" style="width:100%">Save key</button>
+  </div>
+
+  <!-- Main UI -->
+  <div id="main-ui">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <button id="change-key-btn">⚙ Change API key</button>
+      <button id="clear-cache-btn">🗑 Clear cached tags</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#999;cursor:pointer;">
+        <input type="checkbox" id="autofill-toggle" style="cursor:pointer;">
+        Auto-fill Flickr tag field on copy
+      </label>
+    </div>
+    <div id="photo-wrap"><img id="photo" src="" alt="Flickr photo"></div>
+    <div id="location"></div>
+    <div class="row">
+      <button class="primary" id="gen-btn" disabled>Generate tags</button>
+    </div>
+    <div id="tags-wrap">
+      <div id="tag-list"></div>
+      <div id="add-row">
+        <input id="new-tag" type="text" placeholder="Add a tag…">
+        <button id="add-btn">Add</button>
+      </div>
+    </div>
+    <div id="copy-row">
+      <textarea id="tag-line" readonly></textarea>
+      <button id="copy-btn">📋 Copy tags to clipboard</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

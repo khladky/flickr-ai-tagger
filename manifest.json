@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Flickr AI Tagger Gemini",
+  "version": "1.0",
+  "description": "AI tag suggestions via Google Gemini — generates in background, popup can close",
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage", "tabs"],
+  "host_permissions": [
+    "https://www.flickr.com/*",
+    "https://live.staticflickr.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Flickr AI Tagger Gemini"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.flickr.com/photos/*/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
