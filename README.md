@@ -2,8 +2,6 @@
 
 A Chrome extension that uses Google's Gemini AI to suggest tags for your Flickr photos. It reads the photo directly from the Flickr page, identifies the location and scene, and lets you review and edit the tags before sending them to Flickr automatically.
 
-<img src="screenshot.png" width="400">
-
 ## Requirements
 
 - Google Chrome

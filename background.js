@@ -66,6 +66,28 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return false;
 });
 
+async function reverseGeocode(lat, lon) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`,
+      { headers: { "User-Agent": "FlickrAITagger/1.0 (flickr photo tagging extension)" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const a = data.address || {};
+    const parts = [
+      a.suburb || a.neighbourhood || a.quarter,
+      a.city || a.town || a.village || a.municipality,
+      a.county || a.state_district,
+      a.state,
+      a.country
+    ].filter(Boolean);
+    return parts.length ? parts.join(", ") : null;
+  } catch {
+    return null;
+  }
+}
+
 async function geminiCall(apiKey, base64, prompt, maxTokens) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
@@ -88,7 +110,7 @@ async function geminiCall(apiKey, base64, prompt, maxTokens) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function handleGenerate({ base64, location, tabId, pageUrl }) {
+async function handleGenerate({ base64, coords, tabId, pageUrl }) {
   chrome.action.setBadgeText({ text: "…", tabId });
   chrome.action.setBadgeBackgroundColor({ color: "#4285f4", tabId });
 
@@ -107,24 +129,34 @@ async function handleGenerate({ base64, location, tabId, pageUrl }) {
   }, 60000);
 
   try {
-    // Step 1: identify location visually
+    // Step 1: reverse geocode coordinates via Nominatim
+    let locationText = null;
+    if (coords) {
+      locationText = await reverseGeocode(coords.lat, coords.lon);
+    }
+
+    // Step 2: visual location identification via Gemini
     let locationTags = [];
     try {
       const locText = await geminiCall(
         geminiApiKey, base64,
-        "Identify the location visible in this photo as several simple tags — specific landmark, place name, area, region, country. Reply with only a comma-separated list, nothing else.",
+        "Identify the specific named location in this photo — landmark name, named place, town, city, region, country only. Do NOT describe the scene or what you see. Only return proper nouns and named places. If you cannot identify a specific named location, reply with a single hyphen. Reply with only a comma-separated list, nothing else.",
         80
       );
       locationTags = locText.split(",")
         .map(t => t.trim().toLowerCase().replace(/^[-\s]+/, "").replace(/\s+/g, "-"))
-        .filter(t => t.length > 1);
+        .filter(t => t.length > 1 && t !== "-");
     } catch {}
 
-    // Step 2: generate general tags with location context
-    const locationContext = locationTags.length
-      ? ` The photo was taken in ${location || "an unknown location"}. Visual location analysis identified these specific places: ${locationTags.join(", ")}. You MUST include ALL of these location tags in your output.`
-      : (location ? ` The photo was taken in ${location} — include relevant location tags.` : "");
+    // Step 3: build location context — Nominatim result takes priority over Flickr text
+    const locationContext = locationText
+      ? ` The photo was taken in ${locationText}. You MUST include the suburb, city, region and country as tags.`
+        + (locationTags.length ? ` Visual identification also found: ${locationTags.join(", ")}.` : "")
+      : locationTags.length
+        ? ` Visual location identification found: ${locationTags.join(", ")}. Include these as tags.`
+        : "";
 
+    // Step 4: generate tags
     const tagText = await geminiCall(
       geminiApiKey, base64,
       PROMPT_BASE + locationContext,

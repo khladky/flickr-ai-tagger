@@ -77,7 +77,7 @@ function resizeToBase64(url) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const MAX = 1024;
+      const MAX = 1600;
       let w = img.naturalWidth, h = img.naturalHeight;
       if (w > MAX || h > MAX) {
         if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -116,7 +116,7 @@ function startPolling() {
   }, 1000);
 }
 
-async function startGeneration(photoUrl, location, tabId) {
+async function startGeneration(photoUrl, coords, tabId) {
   const allStored = await chrome.storage.local.get(null);
   const alreadyRunning = Object.values(allStored).some(v => v && v.status === "pending");
   if (alreadyRunning) {
@@ -130,7 +130,7 @@ async function startGeneration(photoUrl, location, tabId) {
   try {
     const base64 = await resizeToBase64(photoUrl);
     await chrome.storage.local.set({ [pageUrl]: { status: "pending", tags: [], timestamp: Date.now() } });
-    chrome.runtime.sendMessage({ type: "GENERATE", base64, location, tabId, pageUrl });
+    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, tabId, pageUrl });
     setStatus("⚡ Generating in background — you can close this popup", "warning");
     $("gen-btn").textContent = "Generating…";
     startPolling();
@@ -141,13 +141,11 @@ async function startGeneration(photoUrl, location, tabId) {
   }
 }
 
-// API key setup
 function showKeySetup() {
   $("key-setup").style.display = "block";
   $("main-ui").style.display = "none";
   clearStatus();
 }
-
 function hideKeySetup() {
   $("key-setup").style.display = "none";
   $("main-ui").style.display = "block";
@@ -162,30 +160,13 @@ $("save-key-btn").addEventListener("click", async () => {
   setTimeout(clearStatus, 2000);
 });
 
-$("change-key-btn").addEventListener("click", () => {
-  showKeySetup();
-});
-
-// Load autofill preference and update button label
-function updateCopyBtnLabel() {
-  const autofill = $("autofill-toggle").checked;
-  $("copy-btn").textContent = autofill ? "📋 Copy tags and send to Flickr" : "📋 Copy tags to clipboard";
-}
-chrome.storage.local.get("autofill", ({ autofill }) => {
-  $("autofill-toggle").checked = !!autofill;
-  updateCopyBtnLabel();
-});
-$("autofill-toggle").addEventListener("change", () => {
-  chrome.storage.local.set({ autofill: $("autofill-toggle").checked });
-  updateCopyBtnLabel();
-});
+$("change-key-btn").addEventListener("click", () => showKeySetup());
 
 $("clear-cache-btn").addEventListener("click", async () => {
   const data = await chrome.storage.local.get(null);
   const toRemove = Object.keys(data).filter(k => k.includes("flickr.com"));
   if (toRemove.length) {
     await chrome.storage.local.remove(toRemove);
-    // Reset current view
     tags = tags.filter(t => t.state === "existing");
     renderTags();
     updateCopyRow();
@@ -195,6 +176,20 @@ $("clear-cache-btn").addEventListener("click", async () => {
     setStatus("Nothing to clear.", "");
     setTimeout(clearStatus, 1500);
   }
+});
+
+function updateCopyBtnLabel() {
+  const autofill = $("autofill-toggle").checked;
+  $("copy-btn").textContent = autofill ? "📋 Copy tags and send to Flickr" : "📋 Copy tags to clipboard";
+}
+
+chrome.storage.local.get("autofill", ({ autofill }) => {
+  $("autofill-toggle").checked = !!autofill;
+  updateCopyBtnLabel();
+});
+$("autofill-toggle").addEventListener("change", () => {
+  chrome.storage.local.set({ autofill: $("autofill-toggle").checked });
+  updateCopyBtnLabel();
 });
 
 $("add-btn").addEventListener("click", () => {
@@ -230,7 +225,6 @@ $("copy-btn").addEventListener("click", async () => {
       $("copy-btn").textContent = "Sending to Flickr…";
       $("copy-btn").className = "copied";
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      // Await content script — it clicks Done then responds
       chrome.tabs.sendMessage(tab.id, { type: "FILL_TAGS", tags: tagLine }, () => {});
       $("copy-btn").textContent = "Waiting for Flickr…";
       await new Promise(r => setTimeout(r, 4000));
@@ -263,7 +257,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const [pendingUrl, pendingVal] = pendingEntry;
         setStatus(pendingVal.status === "pending"
           ? "⚡ Still generating — click below to go back"
-          : "✓ Tags are ready — click below to go back", pendingVal.status === "pending" ? "warning" : "success");
+          : "✓ Tags are ready — click below to go back",
+          pendingVal.status === "pending" ? "warning" : "success");
         const goBtn = document.createElement("button");
         goBtn.className = "primary";
         goBtn.style.cssText = "width:100%;margin-top:10px;";
@@ -331,7 +326,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     $("gen-btn").addEventListener("click", () =>
-      startGeneration(response.url, response.location, tab.id)
+      startGeneration(response.url, response.coords, tab.id)
     );
 
   } catch (e) {
