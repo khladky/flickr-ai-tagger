@@ -6,16 +6,23 @@ A Chrome extension that uses Google's Gemini AI to automatically suggest tags fo
 
 ## Requirements
 
-- Google Chrome
+- Google Chrome or Firefox
 - A free Google AI Studio API key (see below)
 
 ## Installation
 
+**Chrome:**
 1. Download the extension folder and save it somewhere permanent on your computer — Chrome needs it to stay there.
-2. Open Chrome and go to `chrome://extensions`
+2. Go to `chrome://extensions`
 3. Turn on **Developer mode** (toggle in the top right)
 4. Click **Load unpacked** and select the extension folder
-5. The Flickr AI Tagger icon will appear in your Chrome toolbar
+
+**Firefox:**
+1. Go to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on**
+3. Select any file inside the extension folder
+
+Note: Firefox's temporary add-on is removed when the browser closes. For permanent installation, the extension would need to be signed by Mozilla.
 
 ## Getting an API key
 
