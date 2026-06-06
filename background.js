@@ -69,17 +69,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 async function reverseGeocode(lat, lon) {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`,
       { headers: { "User-Agent": "FlickrAITagger/1.0 (flickr photo tagging extension)" } }
     );
     if (!res.ok) return null;
     const data = await res.json();
     const a = data.address || {};
     const parts = [
-      a.suburb || a.neighbourhood || a.quarter,
-      a.city || a.town || a.village || a.municipality,
-      a.county || a.state_district,
-      a.state,
+      a.suburb || a.neighbourhood || a.quarter || a.village || a.hamlet,
+      a.city || a.town || a.municipality,
+      a.county || a.state_district || a.province,
+      a.state || a.region,
       a.country
     ].filter(Boolean);
     return parts.length ? parts.join(", ") : null;
@@ -110,7 +110,7 @@ async function geminiCall(apiKey, base64, prompt, maxTokens) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function handleGenerate({ base64, coords, tabId, pageUrl }) {
+async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }) {
   chrome.action.setBadgeText({ text: "…", tabId });
   chrome.action.setBadgeBackgroundColor({ color: "#4285f4", tabId });
 
@@ -129,7 +129,7 @@ async function handleGenerate({ base64, coords, tabId, pageUrl }) {
   }, 60000);
 
   try {
-    // Step 1: reverse geocode coordinates via Nominatim
+    // Step 1: reverse geocode via Nominatim
     let locationText = null;
     if (coords) {
       locationText = await reverseGeocode(coords.lat, coords.lon);
@@ -148,13 +148,16 @@ async function handleGenerate({ base64, coords, tabId, pageUrl }) {
         .filter(t => t.length > 1 && t !== "-");
     } catch {}
 
-    // Step 3: build location context — Nominatim result takes priority over Flickr text
-    const locationContext = locationText
-      ? ` The photo was taken in ${locationText}. You MUST include the suburb, city, region and country as tags.`
-        + (locationTags.length ? ` Visual identification also found: ${locationTags.join(", ")}.` : "")
-      : locationTags.length
-        ? ` Visual location identification found: ${locationTags.join(", ")}. Include these as tags.`
-        : "";
+
+    // Step 3: give Gemini all three sources to cross-reference
+    const locationSources = [];
+    if (flickrLocation) locationSources.push(`Flickr location data says: "${flickrLocation}" (specific place name — likely accurate)`);
+    if (locationText) locationSources.push(`GPS coordinates reverse geocoded to: "${locationText}"`);
+    if (locationTags.length) locationSources.push(`Visual landmark identification found: ${locationTags.join(", ")}`);
+
+    const locationContext = locationSources.length
+      ? ` Location data from multiple sources: ${locationSources.join(". ")}. Cross-reference these with what you can see in the image and generate the most accurate location tags possible, from specific landmark or neighbourhood level down to country level. Include all relevant location levels as separate tags.`
+      : "";
 
     // Step 4: generate tags
     const tagText = await geminiCall(

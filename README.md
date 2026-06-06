@@ -1,6 +1,6 @@
 # Flickr AI Tagger — Gemini
 
-A Chrome extension that uses Google's Gemini AI to automatically suggest tags for your Flickr photos directly from the photo page. It identifies the scene, objects, people, and location — including reverse geocoding GPS coordinates via OpenStreetMap for accurate place names — and lets you review and edit the tags before applying them to Flickr automatically.
+A Chrome extension that uses Google's Gemini AI to automatically suggest tags for your Flickr photos directly from the photo page. It identifies the scene, objects, people, and location — combining three sources of location data for accurate place tagging — and lets you review and edit the tags before applying them to Flickr automatically.
 
 <img src="screenshot.png" width="400">
 
@@ -50,7 +50,13 @@ Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's 
 
 ## Location tagging
 
-If your photo has GPS coordinates on Flickr, the extension automatically reverse geocodes them via OpenStreetMap to get accurate place names (suburb, city, region, country). Gemini also attempts to visually identify any named landmarks in the image. Both sources are combined to produce accurate location tags.
+If your photo has GPS coordinates on Flickr, the extension uses three sources to produce accurate location tags:
+
+- **OpenStreetMap Nominatim** — reverse geocodes the GPS coordinates to get suburb, city, county, region and country. Works well across the UK, Europe, USA, Australia, and many other countries.
+- **Gemini visual identification** — analyses the image for recognisable named landmarks, buildings, and places.
+- **Flickr location data** — the place name Flickr has assigned to the photo, used as a cross-reference.
+
+Gemini cross-references all three sources against what it can see in the image and generates the most accurate set of location tags it can, from specific landmark or neighbourhood level down to country.
 
 ## Notes
 

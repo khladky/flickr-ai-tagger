@@ -116,7 +116,7 @@ function startPolling() {
   }, 1000);
 }
 
-async function startGeneration(photoUrl, coords, tabId) {
+async function startGeneration(photoUrl, coords, flickrLocation, tabId) {
   const allStored = await chrome.storage.local.get(null);
   const alreadyRunning = Object.values(allStored).some(v => v && v.status === "pending");
   if (alreadyRunning) {
@@ -130,7 +130,7 @@ async function startGeneration(photoUrl, coords, tabId) {
   try {
     const base64 = await resizeToBase64(photoUrl);
     await chrome.storage.local.set({ [pageUrl]: { status: "pending", tags: [], timestamp: Date.now() } });
-    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, tabId, pageUrl });
+    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, flickrLocation, tabId, pageUrl });
     setStatus("⚡ Generating in background — you can close this popup", "warning");
     $("gen-btn").textContent = "Generating…";
     startPolling();
@@ -326,7 +326,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     $("gen-btn").addEventListener("click", () =>
-      startGeneration(response.url, response.coords, tab.id)
+      startGeneration(response.url, response.coords, response.location, tab.id)
     );
 
   } catch (e) {
