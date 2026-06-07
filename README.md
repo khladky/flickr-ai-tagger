@@ -30,7 +30,7 @@ Note: Firefox's temporary add-on is removed when the browser closes. For permane
 2. Click **Get API key** and create a new key
 3. Copy the key — you'll need it the first time you open the extension
 
-The free tier is limited to a small number of requests per day. For regular use, add billing at [aistudio.google.com](https://aistudio.google.com) — costs are very small (fractions of a penny per photo) and a small amount of credit goes a long way.
+The free tier is limited to a small number of requests per day. For regular use, add billing at [aistudio.google.com](https://aistudio.google.com) — costs are very small (fractions of a penny per photo) and a small amount of credit (£10 minimum) goes a very long way.
 
 ## Usage
 
