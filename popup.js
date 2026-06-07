@@ -293,6 +293,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     $("photo").src = response.url;
     $("photo-wrap").style.display = "block";
+    $("photo-wrap").addEventListener("click", () => {
+      const lensUrl = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(response.url)}`;
+      chrome.tabs.create({ url: lensUrl, active: false });
+    });
 
     if (response.location) $("location").textContent = "📍 " + response.location;
 

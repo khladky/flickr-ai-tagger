@@ -6,23 +6,15 @@ A Chrome extension that uses Google's Gemini AI to automatically suggest tags fo
 
 ## Requirements
 
-- Google Chrome or Firefox
+- Google Chrome
 - A free Google AI Studio API key (see below)
 
 ## Installation
 
-**Chrome:**
 1. Download the extension folder and save it somewhere permanent on your computer — Chrome needs it to stay there.
 2. Go to `chrome://extensions`
 3. Turn on **Developer mode** (toggle in the top right)
 4. Click **Load unpacked** and select the extension folder
-
-**Firefox:**
-1. Go to `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on**
-3. Select any file inside the extension folder
-
-Note: Firefox's temporary add-on is removed when the browser closes. For permanent installation, the extension would need to be signed by Mozilla.
 
 ## Getting an API key
 
@@ -55,6 +47,10 @@ Type in the add tag box and press Enter or click **Add**. Tags are added one at 
 
 Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes itself once done and the page scrolls to show the updated tags.
 
+## Google Lens
+
+Hovering over the photo in the popup reveals an overlay — clicking it opens the image in Google Lens in a new browser tab, where you can get additional AI analysis, identify landmarks, and explore similar images. Opening Lens switches focus to the new tab and closes the popup. Your generated tags are preserved — simply reopen the popup on the Flickr photo page and they will reappear exactly as you left them, ready to copy without needing to regenerate.
+
 ## Location tagging
 
 If your photo has GPS coordinates on Flickr, the extension uses three sources to produce accurate location tags:
@@ -64,6 +60,10 @@ If your photo has GPS coordinates on Flickr, the extension uses three sources to
 - **Flickr location data** — the place name Flickr has assigned to the photo, used as a cross-reference.
 
 Gemini cross-references all three sources against what it can see in the image and generates the most accurate set of location tags it can, from specific landmark or neighbourhood level down to country.
+
+## Firefox
+
+Firefox support is not currently working due to differences in how Chrome and Firefox handle Manifest V3 extensions. This may be addressed in a future update.
 
 ## Notes
 

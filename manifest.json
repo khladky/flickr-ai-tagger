@@ -2,27 +2,42 @@
   "manifest_version": 3,
   "name": "Flickr AI Tagger Gemini",
   "version": "1.0",
-  "description": "AI tag suggestions via Google Gemini — generates in background, popup can close",
-  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage", "tabs"],
+  "description": "AI tag suggestions via Google Gemini \u2014 generates in background, popup can close",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "clipboardWrite",
+    "storage",
+    "tabs"
+  ],
   "host_permissions": [
     "https://www.flickr.com/*",
     "https://live.staticflickr.com/*",
     "https://generativelanguage.googleapis.com/*",
-    "https://nominatim.openstreetmap.org/*"
+    "https://nominatim.openstreetmap.org/*",
+    "https://lens.google.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Flickr AI Tagger Gemini"
+    "default_title": "Flickr AI Tagger Gemini",
+    "default_icon": {
+      "128": "icon.png"
+    }
   },
   "background": {
-    "service_worker": "background.js",
-    "scripts": ["background.js"],
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.flickr.com/photos/*/*"],
-      "js": ["content.js"]
+      "matches": [
+        "https://www.flickr.com/photos/*/*"
+      ],
+      "js": [
+        "content.js"
+      ]
     }
-  ]
+  ],
+  "icons": {
+    "128": "icon.png"
+  }
 }
