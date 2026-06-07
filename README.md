@@ -51,7 +51,11 @@ Once the popup has closed after auto-filling, the left and right arrow keys can 
 
 ## Google Lens
 
-The photo in the popup is clickable — clicking it opens Google Lens search with your image as a background browser tab. When you are ready, switch to this Google Lens tab to get additional AI analysis, identify landmarks, and explore similar images. In Google Lens the 'AI Mode' will give you the best information. When done switch back to the Flickr page tab and reopen the popup which will be as you left it with all tags intact and not needing regeneration.
+The photo in the popup is clickable — clicking it opens Google Lens in a background browser tab.
+
+Google Lens often identifies specific landmarks, monuments, buildings and places of interest that Gemini misses, making it a useful supplement to the generated tags. Selecting 'AI Mode' in Google Lens will give you the most detailed analysis.
+
+When done, switch back to the Flickr page tab and reopen the popup — it will be exactly as you left it with all tags intact and not needing regeneration. Any additional information found in Lens can be typed into the add tag box manually.
 
 ## Location tagging
 
