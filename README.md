@@ -49,7 +49,7 @@ Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's 
 
 ## Google Lens
 
-The photo in the popup is clickable — clicking it opens Google Lens search with your image as a background browser tab. When you are ready, switch to this Google Lens tab to get additional AI analysis, identify landmarks, and explore similar images. When done switch back to the Flickr page tab and reopen the popup which will be as you left it with all tags intact and not needing regeneration.
+The photo in the popup is clickable — clicking it opens Google Lens search with your image as a background browser tab. When you are ready, switch to this Google Lens tab to get additional AI analysis, identify landmarks, and explore similar images. In Google Lens the 'AI Mode' will give you the best information. When done switch back to the Flickr page tab and reopen the popup which will be as you left it with all tags intact and not needing regeneration.
 
 ## Location tagging
 
