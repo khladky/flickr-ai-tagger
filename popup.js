@@ -251,14 +251,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!tab.url?.match(/flickr\.com\/photos\/[^/]+\/\d+/)) {
       const allStored = await chrome.storage.local.get(null);
       const pendingEntry = Object.entries(allStored).find(
-        ([url, val]) => url.includes("flickr.com/photos") && (val.status === "pending" || val.status === "done")
+        ([url, val]) => url.includes("flickr.com/photos") && val.status === "pending"
       );
       if (pendingEntry) {
         const [pendingUrl, pendingVal] = pendingEntry;
-        setStatus(pendingVal.status === "pending"
+        setStatus("⚠ Please open a Flickr photo page", "error");
+        const notFlickrMsg = document.createElement("p");
+        notFlickrMsg.style.cssText = "font-size:12px;color:#666;margin-bottom:8px;";
+        notFlickrMsg.textContent = pendingVal.status === "pending"
           ? "⚡ Still generating — click below to go back"
-          : "✓ Tags are ready — click below to go back",
-          pendingVal.status === "pending" ? "warning" : "success");
+          : "✓ Tags are ready — click below to go back";
+        $("main-ui").appendChild(notFlickrMsg);
         const goBtn = document.createElement("button");
         goBtn.className = "primary";
         goBtn.style.cssText = "width:100%;margin-top:10px;";
@@ -270,7 +273,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         $("main-ui").appendChild(goBtn);
         $("main-ui").style.display = "block";
       } else {
-        setStatus("Open a Flickr photo page first.", "error");
+        setStatus("⚠ Please open a Flickr photo page", "error");
       }
       return;
     }
