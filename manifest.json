@@ -39,5 +39,13 @@
   ],
   "icons": {
     "128": "icon.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+F"
+      },
+      "description": "Open Flickr AI Tagger"
+    }
   }
 }

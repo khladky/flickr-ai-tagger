@@ -45,7 +45,7 @@ Type in the add tag box and press Enter or click **Add**. Tags are added one at 
 
 ## Auto-fill
 
-Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes itself once done and the page scrolls to show the updated tags. Remember that you can use the right/left arrow keys to go to the next/previous Flickr image page.
+Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes itself once done and the page scrolls to show the updated tags.
 
 ## Google Lens
 
@@ -64,6 +64,10 @@ Gemini cross-references all three sources against what it can see in the image a
 ## Firefox
 
 Firefox support is not currently working due to differences in how Chrome and Firefox handle Manifest V3 extensions. This may be addressed in a future update.
+
+## Keyboard shortcut
+
+The extension can be opened with **Alt+F** when on a Flickr photo page. This can be changed at `chrome://extensions/shortcuts`.
 
 ## Notes
 
