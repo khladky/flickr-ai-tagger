@@ -140,7 +140,7 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
     try {
       const locText = await geminiCall(
         geminiApiKey, base64,
-        "Identify the specific named location in this photo — landmark name, named place, town, city, region, country only. Do NOT describe the scene or what you see. Only return proper nouns and named places. If you cannot identify a specific named location, reply with a single hyphen. Reply with only a comma-separated list, nothing else.",
+        "What specific landmark, monument, building, statue or named place is shown in this photo? Reply with only its name, or a comma-separated list if there are several. If you don\'t recognise anything specific, reply with a single hyphen.",
         80
       );
       locationTags = locText.split(",")

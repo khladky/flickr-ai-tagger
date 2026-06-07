@@ -30,7 +30,7 @@ The free tier is limited to a small number of requests per day. For regular use,
 2. Click the extension icon in the toolbar
 3. Paste your Google AI Studio API key when prompted (first time only)
 4. Click **Generate tags** — the popup can be closed while it runs; a blue badge appears on the icon while generating and turns green when done
-5. Review the suggested tags — click **×** to remove any, type in the box to add your own
+5. Review the suggested tags — click **×** to remove any, type in the box to add your own. Click **Regenerate tags** to get a fresh set if the results are not good enough — any tags you added manually are preserved.
 6. Click **Copy tags to clipboard** (or **Copy tags and send to Flickr** if Auto-fill is on)
 
 ## Adding tags manually
@@ -41,11 +41,13 @@ Type in the add tag box and press Enter or click **Add**. Tags are added one at 
 
 - **Blue** — tags already on this photo in Flickr (read-only, not included in the copy)
 - **Yellow** — freshly suggested by Gemini
-- **Purple** — tags you have added or kept from a previous generation
+- **Purple** — tags you have added manually
 
 ## Auto-fill
 
 Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes itself once done and the page scrolls to show the updated tags.
+
+Once the popup has closed after auto-filling, the left and right arrow keys can be used to navigate to the previous or next photo in your Flickr stream.
 
 ## Google Lens
 

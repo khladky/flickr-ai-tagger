@@ -61,10 +61,11 @@ function updateCopyRow() {
 }
 
 function showResults(newTagTexts) {
-  tags = tags.map(t => t.state === "new" ? { ...t, state: "kept" } : t);
-  const existing = tags.map(t => t.text);
+  // Keep existing (Flickr) and kept (manually added) tags, replace new (generated) tags
+  tags = tags.filter(t => t.state !== "new");
+  const existingTexts = tags.map(t => t.text);
   const toAdd = newTagTexts
-    .filter(t => !existing.includes(t))
+    .filter(t => !existingTexts.includes(t))
     .map(t => ({ text: t, state: "new" }));
   tags = [...tags, ...toAdd];
   $("tags-wrap").style.display = "block";
@@ -106,7 +107,7 @@ function startPolling() {
       showResults(entry.tags);
       clearStatus();
       $("gen-btn").disabled = false;
-      $("gen-btn").textContent = "Generate more tags";
+      $("gen-btn").textContent = "Regenerate tags";
     } else {
       setStatus("Gemini error — check your API key", "error");
       $("gen-btn").disabled = false;
@@ -170,6 +171,7 @@ $("clear-cache-btn").addEventListener("click", async () => {
     tags = tags.filter(t => t.state === "existing");
     renderTags();
     updateCopyRow();
+    $("gen-btn").textContent = "Generate tags";
     setStatus("Cached tags cleared.", "success");
     setTimeout(clearStatus, 2000);
   } else {
@@ -320,7 +322,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       clearStatus();
       $("gen-btn").disabled = false;
-      $("gen-btn").textContent = "Generate more tags";
+      $("gen-btn").textContent = "Regenerate tags";
     } else if (entry?.status === "pending") {
       setStatus("⚡ Generating in background — you can close this popup", "warning");
       $("gen-btn").disabled = true;
