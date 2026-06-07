@@ -4,6 +4,13 @@ let pageUrl = null;
 
 const $ = id => document.getElementById(id);
 
+// Show version from manifest
+chrome.runtime.getManifest && document.addEventListener("DOMContentLoaded", () => {
+  const v = chrome.runtime.getManifest().version;
+  const el = $("version");
+  if (el) el.textContent = "v" + v;
+});
+
 function setStatus(msg, cls = "") {
   const el = $("status");
   el.textContent = msg;
