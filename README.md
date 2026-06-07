@@ -45,7 +45,7 @@ Type in the add tag box and press Enter or click **Add**. Tags are added one at 
 
 ## Auto-fill
 
-Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes itself once done and the page scrolls to show the updated tags.
+Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes itself once done and the page scrolls to show the updated tags. Remember that you can use the right/left arrow keys to go to the next/previous Flickr image page.
 
 ## Google Lens
 
