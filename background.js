@@ -106,12 +106,28 @@ async function geminiCall(apiKey, base64, prompt, maxTokens, attempt = 1) {
         })
       }
     );
-    if (!res.ok) throw new Error(`Gemini error ${res.status}`);
+    // Rate limited — wait 8 seconds and retry once
+    if (res.status === 429) {
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 8000));
+        return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
+      }
+      throw new Error("Gemini rate limit — try again in a moment");
+    }
+    if (!res.ok) {
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 3000));
+        return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
+      }
+      throw new Error(`Gemini error ${res.status} — server may be busy, try again`);
+    }
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    // Empty candidates = safety block — return empty without retrying
+    if (!data.candidates || data.candidates.length === 0) return "";
+    return data.candidates[0]?.content?.parts?.[0]?.text || "";
   } catch (e) {
-    if (attempt < 2) {
-      await new Promise(r => setTimeout(r, 2000));
+    if (attempt < 2 && !e.message.startsWith("Gemini")) {
+      await new Promise(r => setTimeout(r, 3000));
       return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
     }
     throw e;
