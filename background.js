@@ -173,6 +173,9 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
     } catch {}
 
 
+    // Small delay between calls to avoid rate limiting
+    await new Promise(r => setTimeout(r, 1000));
+
     // Step 3: give Gemini all three sources to cross-reference
     const locationSources = [];
     if (flickrLocation) locationSources.push(`Flickr location data says: "${flickrLocation}" (specific place name — likely accurate)`);
