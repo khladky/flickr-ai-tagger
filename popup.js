@@ -116,7 +116,7 @@ function startPolling() {
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Regenerate tags";
     } else {
-      setStatus("Gemini error — check your API key", "error");
+      setStatus("Gemini error — server may be busy, try again", "error");
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Generate tags";
       chrome.storage.local.remove(pageUrl);

@@ -88,26 +88,34 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
-async function geminiCall(apiKey, base64, prompt, maxTokens) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: "image/jpeg", data: base64 } },
-            { text: prompt }
-          ]
-        }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
-      })
+async function geminiCall(apiKey, base64, prompt, maxTokens, attempt = 1) {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: "image/jpeg", data: base64 } },
+              { text: prompt }
+            ]
+          }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
+        })
+      }
+    );
+    if (!res.ok) throw new Error(`Gemini error ${res.status}`);
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  } catch (e) {
+    if (attempt < 2) {
+      await new Promise(r => setTimeout(r, 2000));
+      return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
     }
-  );
-  if (!res.ok) throw new Error(`Gemini returned ${res.status}`);
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    throw e;
+  }
 }
 
 async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }) {
@@ -126,7 +134,7 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
     await chrome.storage.local.set({ [pageUrl]: { status: "error", tags: [], timestamp: Date.now() } });
     chrome.action.setBadgeText({ text: "!", tabId });
     chrome.action.setBadgeBackgroundColor({ color: "#e53e3e", tabId });
-  }, 60000);
+  }, 35000);
 
   try {
     // Step 1: reverse geocode via Nominatim

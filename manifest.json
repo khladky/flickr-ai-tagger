@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Flickr AI Tagger Gemini",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "AI tag suggestions via Google Gemini \u2014 generates in background, popup can close",
   "permissions": [
     "activeTab",
