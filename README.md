@@ -69,7 +69,14 @@ Gemini cross-references all three sources against what it can see in the image a
 
 ## Firefox
 
-Firefox support is not currently working due to differences in how Chrome and Firefox handle Manifest V3 extensions. This may be addressed in a future update.
+The extension includes Firefox compatibility settings in the manifest. Firefox support is experimental and has not been fully tested — it may work but is not guaranteed. If you try it and find issues, please raise them in the GitHub issues tab.
+
+**Firefox installation:**
+1. Go to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on**
+3. Select any file inside the extension folder
+
+Note: Firefox temporary add-ons are removed when the browser closes. For permanent installation the extension would need to be signed by Mozilla.
 
 ## Keyboard shortcut
 

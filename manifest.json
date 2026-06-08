@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Flickr AI Tagger Gemini",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "AI tag suggestions via Google Gemini \u2014 generates in background, popup can close",
   "permissions": [
     "activeTab",
@@ -46,6 +46,12 @@
         "default": "Alt+F"
       },
       "description": "Open Flickr AI Tagger"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "128.0",
+      "id": "{flickr-ai-tagger-gemini@karel}"
     }
   }
 }
