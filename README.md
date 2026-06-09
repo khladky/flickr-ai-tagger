@@ -49,7 +49,7 @@ Tags are colour coded:
 - **Purple (labelled "Added from EXIF")** — tags automatically read from the photo's camera data (see below).
 - **Grey italic** — a tag currently being edited (see below).
 
-**To add a tag** — type in the box at the bottom of the tag panel and press Enter or click **Add**. Spaces are converted to hyphens automatically.
+**To add a tag** — type in the box at the bottom of the tag panel and press Enter or click **Add**. Spaces are converted to hyphens automatically. If the entered tag already exists — either already on Flickr or in the Gemini suggestions — it will not be added again.
 
 **To edit a tag** — Alt+click it. It turns grey in place and its text appears in the add box for editing. Press Enter to apply the edit, press Escape or click the **×** on the grey tag to cancel and restore the original.
 
