@@ -88,50 +88,26 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
-async function geminiCall(apiKey, base64, prompt, maxTokens, attempt = 1) {
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: "image/jpeg", data: base64 } },
-              { text: prompt }
-            ]
-          }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
-        })
-      }
-    );
-    // Rate limited — wait 8 seconds and retry once
-    if (res.status === 429) {
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 8000));
-        return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
-      }
-      throw new Error("Gemini rate limit — try again in a moment");
+async function geminiCall(apiKey, base64, prompt, maxTokens) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: "image/jpeg", data: base64 } },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
+      })
     }
-    if (!res.ok) {
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 3000));
-        return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
-      }
-      throw new Error(`Gemini error ${res.status} — server may be busy, try again`);
-    }
-    const data = await res.json();
-    // Empty candidates = safety block — return empty without retrying
-    if (!data.candidates || data.candidates.length === 0) return "";
-    return data.candidates[0]?.content?.parts?.[0]?.text || "";
-  } catch (e) {
-    if (attempt < 2 && !e.message.startsWith("Gemini")) {
-      await new Promise(r => setTimeout(r, 3000));
-      return geminiCall(apiKey, base64, prompt, maxTokens, attempt + 1);
-    }
-    throw e;
-  }
+  );
+  if (!res.ok) throw new Error(`Gemini returned ${res.status}`);
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }) {
@@ -150,7 +126,7 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
     await chrome.storage.local.set({ [pageUrl]: { status: "error", tags: [], timestamp: Date.now() } });
     chrome.action.setBadgeText({ text: "!", tabId });
     chrome.action.setBadgeBackgroundColor({ color: "#e53e3e", tabId });
-  }, 35000);
+  }, 60000);
 
   try {
     // Step 1: reverse geocode via Nominatim
@@ -159,34 +135,16 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
       locationText = await reverseGeocode(coords.lat, coords.lon);
     }
 
-    // Step 2: visual location identification via Gemini
-    let locationTags = [];
-    try {
-      const locText = await geminiCall(
-        geminiApiKey, base64,
-        "What specific landmark, monument, building, statue or named place is shown in this photo? Reply with only its name, or a comma-separated list if there are several. If you don\'t recognise anything specific, reply with a single hyphen.",
-        80
-      );
-      locationTags = locText.split(",")
-        .map(t => t.trim().toLowerCase().replace(/^[-\s]+/, "").replace(/\s+/g, "-"))
-        .filter(t => t.length > 1 && t !== "-");
-    } catch {}
-
-
-    // Small delay between calls to avoid rate limiting
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Step 3: give Gemini all three sources to cross-reference
+    // Build location context from Nominatim and Flickr data
     const locationSources = [];
-    if (flickrLocation) locationSources.push(`Flickr location data says: "${flickrLocation}" (specific place name — likely accurate)`);
-    if (locationText) locationSources.push(`GPS coordinates reverse geocoded to: "${locationText}"`);
-    if (locationTags.length) locationSources.push(`Visual landmark identification found: ${locationTags.join(", ")}`);
+    if (flickrLocation) locationSources.push(`Flickr location: "${flickrLocation}"`);
+    if (locationText) locationSources.push(`GPS reverse geocoded to: "${locationText}"`);
 
     const locationContext = locationSources.length
-      ? ` Location data from multiple sources: ${locationSources.join(". ")}. Cross-reference these with what you can see in the image and generate the most accurate location tags possible, from specific landmark or neighbourhood level down to country level. Include all relevant location levels as separate tags.`
+      ? ` Location data: ${locationSources.join(". ")}. Include relevant location tags from specific neighbourhood level down to country.`
       : "";
 
-    // Step 4: generate tags
+    // Generate tags
     const tagText = await geminiCall(
       geminiApiKey, base64,
       PROMPT_BASE + locationContext,
@@ -197,9 +155,9 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
       .map(t => t.trim().toLowerCase().replace(/^[-\s]+/, "").replace(/\s+/g, "-"))
       .filter(t => t.length > 1);
 
-    // Merge: location tags first, then general tags, deduplicated
+    // Deduplicate tags
     const seen = new Set();
-    const tags = [...locationTags, ...generalTags].filter(t => {
+    const tags = generalTags.filter(t => {
       if (seen.has(t)) return false;
       seen.add(t);
       return true;
