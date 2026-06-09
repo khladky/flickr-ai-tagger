@@ -9,11 +9,12 @@ A Chrome extension that uses Google's Gemini AI to automatically suggest tags fo
 - Google Chrome
 - A Google AI Studio API key (see below)
 
-## Installation
+## Downloading and installing the extension
 
-1. Download the extension folder and save it somewhere permanent on your computer — Chrome needs it to stay there.
-2. Go to `chrome://extensions`
-3. Turn on **Developer mode** (toggle in the top right)
+On the GitHub repository page, click the green **Code** button near the top right, then select **Download ZIP**. Extract the zip to a folder on your computer — this folder needs to stay in place permanently as Chrome will load the extension directly from it.
+
+1. Open Chrome and go to `chrome://extensions`
+2. Turn on **Developer mode** (toggle in the top right)
 4. Click **Load unpacked** and select the extension folder
 
 ## Getting an API key
