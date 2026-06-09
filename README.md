@@ -17,6 +17,10 @@ On the GitHub repository page, click the green **Code** button near the top righ
 2. Turn on **Developer mode** (toggle in the top right)
 4. Click **Load unpacked** and select the extension folder
 
+## Updating to a new version
+
+When a new version is released, download the ZIP again from GitHub, extract it, and copy the new files into your existing extension folder, replacing the old ones. Then go to `chrome://extensions`, find the Flickr AI Tagger card, and click the circular arrow icon (↻) in the bottom left corner of the card to reload it. Your API key and settings are stored separately and will not be affected.
+
 ## Getting an API key
 
 1. Go to [aistudio.google.com](https://aistudio.google.com) and sign in with a Google account
