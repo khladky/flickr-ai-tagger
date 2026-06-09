@@ -69,13 +69,12 @@ When done, switch back to the Flickr page tab and reopen the popup — it will b
 
 ## Location tagging
 
-If your photo has GPS coordinates on Flickr, the extension uses three sources to produce accurate location tags:
+If your photo has GPS coordinates on Flickr, the extension uses two sources to produce accurate location tags:
 
 - **OpenStreetMap Nominatim** — reverse geocodes the GPS coordinates to get suburb, city, county, region and country.
-- **Gemini visual identification** — analyses the image for recognisable named landmarks, buildings and places.
 - **Flickr location data** — the place name Flickr has assigned to the photo, used as a cross-reference.
 
-Gemini cross-references all three sources and generates the most accurate location tags it can, from specific landmark level down to country.
+Both sources are passed to Gemini which generates the most accurate location tags it can, from specific neighbourhood level down to country.
 
 ## Camera and lens data (EXIF)
 
