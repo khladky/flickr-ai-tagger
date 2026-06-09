@@ -6,11 +6,16 @@ let pageUrl = null;
 
 const $ = id => document.getElementById(id);
 
-// Show version from manifest
+// Show version from manifest and link to GitHub
 chrome.runtime.getManifest && document.addEventListener("DOMContentLoaded", () => {
   const v = chrome.runtime.getManifest().version;
   const el = $("version");
-  if (el) el.textContent = "v" + v;
+  if (el) {
+    el.textContent = "v" + v;
+    el.addEventListener("click", () => {
+      chrome.tabs.create({ url: "https://github.com/khladky/flickr-ai-tagger", active: false });
+    });
+  }
 });
 
 function setStatus(msg, cls = "") {
