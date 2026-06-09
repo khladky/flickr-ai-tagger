@@ -55,6 +55,8 @@
     .tag.existing { background: #e8f0fe; border: 1px solid #93b4f5; color: #1a3a7a; padding: 3px 12px; cursor: default; }
     .tag.kept     { background: #f3ecff; border: 1px solid #c9a0f5; color: #3d0066; padding: 3px 10px 3px 12px; }
     .tag.new      { background: #fff8e1; border: 1px solid #f6c843; color: #5a3e00; padding: 3px 10px 3px 12px; }
+    .tag.editing  { background: #f0f0f0; border: 1px solid #ccc; color: #999; padding: 3px 10px 3px 12px; font-style: italic; }
+    .tag.editing button { color: #bbb; }
     .tag button   { background: none; border: none; padding: 0; cursor: pointer; font-size: 15px; line-height: 1; font-weight: 700; }
     .tag.kept button { color: #9b59d0; }
     .tag.new  button { color: #c9a230; }
@@ -138,7 +140,7 @@
     <div id="photo-wrap"><img id="photo" src="" alt="Flickr photo"><div class="lens-hint">🔍 Click to open image in Google Lens as a new browser tab</div></div>
     <div id="location"></div>
     <div class="row">
-      <button class="primary" id="gen-btn" disabled>Generate tags</button>
+      <button class="primary" id="gen-btn" disabled title="Alt+click to undo last generation | Alt+click a tag to edit it">Generate tags</button>
     </div>
     <div id="tags-wrap">
       <div id="tag-list"></div>

@@ -1,5 +1,7 @@
 // state: "existing" | "kept" | "new"
 let tags = [];
+let previousTags = null; // for undo
+let editingTag = null;  // { text, state } of tag currently being edited
 let pageUrl = null;
 
 const $ = id => document.getElementById(id);
@@ -26,6 +28,7 @@ function renderTags() {
     { state: "existing", label: "Already on Flickr" },
     { state: "kept",     label: "Added" },
     { state: "new",      label: "New suggestions — remove any you don't want" },
+    { state: "editing",  label: "Editing" },
   ];
   for (const { state, label } of groups) {
     const group = tags.filter(t => t.state === state);
@@ -41,14 +44,52 @@ function renderTags() {
 function makeChip(tag) {
   const span = document.createElement("span");
   span.className = `tag ${tag.state}`;
+
   if (tag.state === "existing") {
     span.textContent = tag.text;
+  } else if (tag.state === "editing") {
+    span.innerHTML = `${tag.text}<button title="Cancel edit">×</button>`;
+    span.querySelector("button").addEventListener("click", () => {
+      // Cancel — restore original state
+      if (editingTag) {
+        const { text: origText, state: origState } = editingTag;
+        editingTag = null;
+        tags = tags.map(t => t.state === "editing" ? { text: origText, state: origState } : t);
+        $("new-tag").value = "";
+        renderTags();
+        updateCopyRow();
+      }
+    });
   } else {
+    span.title = "Alt+click to edit";
     span.innerHTML = `${tag.text}<button title="Remove">×</button>`;
     span.querySelector("button").addEventListener("click", () => {
       tags = tags.filter(t => t.text !== tag.text);
       renderTags();
       updateCopyRow();
+    });
+    span.addEventListener("click", e => {
+      if (!e.altKey) return;
+      e.preventDefault();
+      const input = $("new-tag");
+      // Restore any previously editing tag first
+      if (editingTag) {
+        const { text: origText, state: origState } = editingTag;
+        tags = tags.map(t => t.state === "editing" ? { text: origText, state: origState } : t);
+      }
+      // Save pending input as kept tag
+      const pending = input.value.trim().toLowerCase().replace(/\s+/g, "-").replace(/^[-]+/, "");
+      if (pending.length > 1 && !tags.some(x => x.text === pending)) {
+        tags = [...tags, { text: pending, state: "kept" }];
+      }
+      // Mark this tag as editing
+      editingTag = { text: tag.text, state: tag.state };
+      tags = tags.map(t => t.text === tag.text && t.state === tag.state ? { ...t, state: "editing" } : t);
+      renderTags();
+      updateCopyRow();
+      input.value = tag.text.replace(/-/g, " ");
+      input.focus();
+      input.select();
     });
   }
   return span;
@@ -68,6 +109,8 @@ function updateCopyRow() {
 }
 
 function showResults(newTagTexts) {
+  // Save current state for undo
+  previousTags = [...tags];
   // Keep existing (Flickr) and kept (manually added) tags, replace new (generated) tags
   tags = tags.filter(t => t.state !== "new");
   const existingTexts = tags.map(t => t.text);
@@ -116,7 +159,7 @@ function startPolling() {
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Regenerate tags";
     } else {
-      setStatus("Gemini error — server may be busy, try again", "error");
+      setStatus("Gemini error — check your API key", "error");
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Generate tags";
       chrome.storage.local.remove(pageUrl);
@@ -204,17 +247,46 @@ $("autofill-toggle").addEventListener("change", () => {
 $("add-btn").addEventListener("click", () => {
   const input = $("new-tag");
   const t = input.value.trim().toLowerCase().replace(/\s+/g, "-").replace(/^[-]+/, "");
-  if (t && t.length > 1 && !tags.find(x => x.text === t)) {
-    tags.push({ text: t, state: "kept" });
-    renderTags();
-    updateCopyRow();
+
+  if (editingTag) {
+    const { text: origText, state: origState } = editingTag;
+    editingTag = null;
+    if (t.length > 1) {
+      // Apply edit — replace editing tag with new text, same state
+      if (!tags.some(x => x.text === t && x.state !== "editing")) {
+        tags = tags.map(tag => tag.state === "editing" ? { text: t, state: origState } : tag);
+      } else {
+        // Duplicate — just restore original
+        tags = tags.map(tag => tag.state === "editing" ? { text: origText, state: origState } : tag);
+      }
+    } else {
+      // Empty input — restore original
+      tags = tags.map(tag => tag.state === "editing" ? { text: origText, state: origState } : tag);
+    }
+  } else {
+    if (!t || t.length <= 1) return;
+    if (!tags.find(x => x.text === t)) {
+      tags.push({ text: t, state: "kept" });
+    }
   }
+
   input.value = "";
   input.focus();
+  renderTags();
+  updateCopyRow();
 });
 
 $("new-tag").addEventListener("keydown", e => {
   if (e.key === "Enter") $("add-btn").click();
+  if (e.key === "Escape" && editingTag) {
+    // Escape cancels edit and restores original
+    const { text: origText, state: origState } = editingTag;
+    editingTag = null;
+    tags = tags.map(t => t.state === "editing" ? { text: origText, state: origState } : t);
+    $("new-tag").value = "";
+    renderTags();
+    updateCopyRow();
+  }
 });
 
 $("copy-btn").addEventListener("click", async () => {
@@ -341,9 +413,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       $("gen-btn").textContent = "Generate tags";
     }
 
-    $("gen-btn").addEventListener("click", () =>
-      startGeneration(response.url, response.coords, response.location, tab.id)
-    );
+    $("gen-btn").addEventListener("click", e => {
+      if (e.altKey) {
+        if (!previousTags) return;
+        tags = [...previousTags];
+        previousTags = null;
+        renderTags();
+        updateCopyRow();
+        return;
+      }
+      startGeneration(response.url, response.coords, response.location, tab.id);
+    });
 
   } catch (e) {
     setStatus("Something went wrong: " + e.message, "error");
