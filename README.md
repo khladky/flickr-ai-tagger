@@ -38,9 +38,10 @@ The popup can be closed while tags are generating — a blue badge appears on th
 
 Tags are colour coded:
 
-- **Blue** — already on this photo in Flickr. These are shown for reference and are not included in the copy.
+- **Blue** — already on this photo in Flickr. Shown for reference, not included in the copy.
 - **Yellow** — freshly suggested by Gemini. Remove any you don't want by clicking **×**.
-- **Purple** — tags you have added manually or kept from a previous session.
+- **Purple** — tags you have added manually.
+- **Purple (labelled "Added from EXIF")** — tags automatically read from the photo's camera data (see below).
 - **Grey italic** — a tag currently being edited (see below).
 
 **To add a tag** — type in the box at the bottom of the tag panel and press Enter or click **Add**. Spaces are converted to hyphens automatically.
@@ -70,6 +71,20 @@ If your photo has GPS coordinates on Flickr, the extension uses three sources to
 - **Flickr location data** — the place name Flickr has assigned to the photo, used as a cross-reference.
 
 Gemini cross-references all three sources and generates the most accurate location tags it can, from specific landmark level down to country.
+
+## Camera and lens data (EXIF)
+
+Tick **Include camera and lens data as tags** to automatically add technical tags from the photo's embedded EXIF data. These appear immediately when the popup opens, without needing a Gemini call, under the label "Added from EXIF". Fields included where available:
+
+- Camera make and model (e.g. `panasonic-dmc-tz100`)
+- Lens model (e.g. `leica-dc-vario-elmarit-9.1-91mm`)
+- Focal length in 35mm equivalent (e.g. `25mm`)
+- Aperture (e.g. `f2.8`)
+- Shutter speed (e.g. `1/500s`)
+- ISO (e.g. `iso-125`)
+- `long-exposure` — added automatically if shutter speed is 1 second or longer
+
+Individual EXIF tags can be removed by clicking **×** on them. If the photo has no EXIF data, or the owner has hidden it, a brief message will say "No camera data available for this photo."
 
 ## Keyboard shortcut
 

@@ -23,9 +23,38 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   }
 
+  // Read EXIF data
+  const exif = {};
+
+  // Camera model
+  const cameraEl = document.querySelector('div.exif-camera-name a');
+  if (cameraEl) exif.camera = cameraEl.textContent.trim();
+
+  // Aperture, focal length, ISO, shutter speed
+  const apertureEl = document.querySelector('li.c-charm-item-aperture span');
+  if (apertureEl) exif.aperture = apertureEl.textContent.trim();
+
+  const focalEl = document.querySelector('li.c-charm-item-focal-length span');
+  if (focalEl) exif.focalLength = focalEl.textContent.trim();
+
+  const isoEl = document.querySelector('li.c-charm-item-iso span');
+  if (isoEl) exif.iso = isoEl.textContent.trim();
+
+  const shutterEl = document.querySelector('li.c-charm-item-exposure-time span');
+  if (shutterEl) exif.shutter = shutterEl.textContent.trim();
+
+  // Extended EXIF fields — already in DOM, just hidden
+  document.querySelectorAll('li.extended-exif-item').forEach(li => {
+    const name = li.querySelector('span.exif-name')?.textContent.replace(' - ', '').trim();
+    const value = li.querySelector('span.exif-value')?.textContent.trim();
+    if (!name || !value) return;
+    if (name === 'Focal Length (35mm format)') exif.focalLength35 = value;
+    if (name === 'Lens Model' && value !== 'N/A' && !exif.lensModel) exif.lensModel = value;
+  });
+
   const og = document.querySelector('meta[property="og:image"]');
   if (og && og.content) {
-    sendResponse({ url: og.content, existingTags, location, coords });
+    sendResponse({ url: og.content, existingTags, location, coords, exif });
     return;
   }
 
@@ -34,7 +63,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     .sort((a, b) => b.naturalWidth - a.naturalWidth);
 
   if (imgs.length) {
-    sendResponse({ url: imgs[0].src, existingTags, location, coords });
+    sendResponse({ url: imgs[0].src, existingTags, location, coords, exif });
     return;
   }
 

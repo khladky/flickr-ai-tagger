@@ -28,6 +28,7 @@ function renderTags() {
     { state: "existing", label: "Already on Flickr" },
     { state: "kept",     label: "Added" },
     { state: "new",      label: "New suggestions — remove any you don't want" },
+    { state: "exif",     label: "Added from EXIF" },
     { state: "editing",  label: "Editing" },
   ];
   for (const { state, label } of groups) {
@@ -47,6 +48,13 @@ function makeChip(tag) {
 
   if (tag.state === "existing") {
     span.textContent = tag.text;
+  } else if (tag.state === "exif") {
+    span.innerHTML = `${tag.text}<button title="Remove">×</button>`;
+    span.querySelector("button").addEventListener("click", () => {
+      tags = tags.filter(t => t.text !== tag.text);
+      renderTags();
+      updateCopyRow();
+    });
   } else if (tag.state === "editing") {
     span.innerHTML = `${tag.text}<button title="Cancel edit">×</button>`;
     span.querySelector("button").addEventListener("click", () => {
@@ -96,7 +104,7 @@ function makeChip(tag) {
 }
 
 function updateCopyRow() {
-  const toAdd = tags.filter(t => t.state !== "existing").map(t => t.text);
+  const toAdd = tags.filter(t => t.state !== "existing" && t.state !== "editing").map(t => t.text);
   if (!toAdd.length) { $("copy-row").style.display = "none"; return; }
   $("copy-row").style.display = "block";
   $("tag-line").value = toAdd.join(" ");
@@ -229,6 +237,57 @@ $("clear-cache-btn").addEventListener("click", async () => {
     setTimeout(clearStatus, 1500);
   }
 });
+
+// EXIF toggle
+chrome.storage.local.get("includeExif", ({ includeExif }) => {
+  $("exif-toggle").checked = !!includeExif;
+});
+$("exif-toggle").addEventListener("change", () => {
+  chrome.storage.local.set({ includeExif: $("exif-toggle").checked });
+});
+
+function buildExifTags(exif) {
+  const tags = [];
+  if (!exif || Object.keys(exif).length === 0) return tags;
+
+  // Camera make/model — clean up and hyphenate
+  if (exif.camera) {
+    tags.push(exif.camera.toLowerCase().replace(/\s+/g, "-"));
+  }
+
+  // Lens model — skip if N/A or very long
+  if (exif.lensModel && exif.lensModel !== "N/A" && exif.lensModel.length < 60) {
+    tags.push(exif.lensModel.toLowerCase().replace(/\s+/g, "-"));
+  }
+
+  // Focal length — prefer 35mm equivalent
+  const fl = exif.focalLength35 || exif.focalLength;
+  if (fl) {
+    tags.push(fl.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
+  }
+
+  // Aperture
+  if (exif.aperture) {
+    tags.push(exif.aperture.replace("ƒ/", "f").replace(/\s+/g, "").toLowerCase());
+  }
+
+  // ISO
+  if (exif.iso) {
+    tags.push("iso-" + exif.iso.replace(/\s+/g, ""));
+  }
+
+  // Shutter speed + long exposure detection
+  if (exif.shutter) {
+    tags.push(exif.shutter.replace(/\s+/g, "") + "s");
+    const match = exif.shutter.match(/^(\d+)(?:\/(\d+))?/);
+    if (match) {
+      const seconds = match[2] ? parseInt(match[1]) / parseInt(match[2]) : parseInt(match[1]);
+      if (seconds >= 1) tags.push("long-exposure");
+    }
+  }
+
+  return tags.filter(t => t.length > 1);
+}
 
 function updateCopyBtnLabel() {
   const autofill = $("autofill-toggle").checked;
@@ -388,6 +447,27 @@ document.addEventListener("DOMContentLoaded", async () => {
       tags = response.existingTags.map(t => ({ text: t, state: "existing" }));
       $("tags-wrap").style.display = "block";
       renderTags();
+    }
+
+    // Add EXIF tags if toggle is on
+    const { includeExif } = await chrome.storage.local.get("includeExif");
+    if (includeExif) {
+      const exifTags = buildExifTags(response.exif);
+      if (exifTags.length > 0) {
+        const existingTexts = tags.map(t => t.text);
+        const toAdd = exifTags
+          .filter(t => !existingTexts.includes(t))
+          .map(t => ({ text: t, state: "exif" }));
+        if (toAdd.length > 0) {
+          tags = [...tags, ...toAdd];
+          $("tags-wrap").style.display = "block";
+          renderTags();
+          updateCopyRow();
+        }
+      } else {
+        setStatus("No camera data available for this photo.", "");
+        setTimeout(clearStatus, 3000);
+      }
     }
 
     if (entry?.status === "done") {
