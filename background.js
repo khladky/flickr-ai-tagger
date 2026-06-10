@@ -29,6 +29,14 @@ async function injectIntoExistingTabs() {
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   await updateBadgeForTab(tabId);
+  // Reopen popup if user returns to the tab where it was open before Lens
+  const { reopenPopupTab } = await chrome.storage.local.get("reopenPopupTab");
+  if (reopenPopupTab && reopenPopupTab.tabId === tabId) {
+    await chrome.storage.local.remove("reopenPopupTab");
+    try {
+      await chrome.action.openPopup();
+    } catch {}
+  }
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
@@ -57,6 +65,11 @@ async function updateBadgeForTab(tabId) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "REFRESH_BADGE") {
     updateBadgeForTab(msg.tabId);
+    sendResponse({ ok: true });
+    return false;
+  }
+  if (msg.type === "SET_REOPEN_TAB") {
+    chrome.storage.local.set({ reopenPopupTab: { tabId: msg.tabId } });
     sendResponse({ ok: true });
     return false;
   }

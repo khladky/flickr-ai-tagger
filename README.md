@@ -94,6 +94,8 @@ Individual EXIF tags can be removed by clicking **×** on them. If the photo has
 
 The extension can be opened with **Alt+F** when on a Flickr photo page. This can be changed at `chrome://extensions/shortcuts`.
 
+If your mouse has extra buttons, you can map one of them to **Alt+F** using free software such as [X-Mouse Button Control](https://www.highrez.co.uk/downloads/xmousebuttoncontrol.htm). This lets you open the extension with a single mouse button click. X-Mouse Button Control supports per-application profiles, so the mapping can be set to apply only when Chrome is active, leaving the button's normal behaviour unchanged in other applications.
+
 ## Firefox
 
 The extension includes Firefox compatibility settings. Firefox support is experimental and has not been fully tested. If you try it and find issues, please raise them in the GitHub issues tab.
