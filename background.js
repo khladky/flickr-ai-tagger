@@ -29,14 +29,6 @@ async function injectIntoExistingTabs() {
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   await updateBadgeForTab(tabId);
-  // Reopen popup if user returns to the tab where it was open before Lens
-  const { reopenPopupTab } = await chrome.storage.local.get("reopenPopupTab");
-  if (reopenPopupTab && reopenPopupTab.tabId === tabId) {
-    await chrome.storage.local.remove("reopenPopupTab");
-    try {
-      await chrome.action.openPopup();
-    } catch {}
-  }
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
@@ -65,11 +57,6 @@ async function updateBadgeForTab(tabId) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "REFRESH_BADGE") {
     updateBadgeForTab(msg.tabId);
-    sendResponse({ ok: true });
-    return false;
-  }
-  if (msg.type === "SET_REOPEN_TAB") {
-    chrome.storage.local.set({ reopenPopupTab: { tabId: msg.tabId } });
     sendResponse({ ok: true });
     return false;
   }
@@ -118,7 +105,9 @@ async function geminiCall(apiKey, base64, prompt, maxTokens) {
       })
     }
   );
-  if (!res.ok) throw new Error(`Gemini returned ${res.status}`);
+  if (res.status === 401 || res.status === 403) throw new Error("auth");
+  if (res.status === 429) throw new Error("rate_limit");
+  if (!res.ok) throw new Error("server");
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
@@ -189,7 +178,8 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
 
   } catch (e) {
     clearTimeout(timeout);
-    await chrome.storage.local.set({ [pageUrl]: { status: "error", tags: [], timestamp: Date.now() } });
+    const errorType = ["auth", "rate_limit", "server"].includes(e.message) ? e.message : "server";
+    await chrome.storage.local.set({ [pageUrl]: { status: "error", errorType, tags: [], timestamp: Date.now() } });
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (activeTab && activeTab.id === tabId) {
       chrome.action.setBadgeText({ text: "!", tabId });

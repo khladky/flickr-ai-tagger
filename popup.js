@@ -172,7 +172,13 @@ function startPolling() {
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Regenerate tags";
     } else {
-      setStatus("Gemini error — check your API key", "error");
+      const errorType = entry.errorType || "server";
+      const errorMsg = errorType === "auth"
+        ? "Gemini error — invalid API key, check your key"
+        : errorType === "rate_limit"
+        ? "Gemini rate limit reached — try again in a moment"
+        : "Gemini error — server busy, try again";
+      setStatus(errorMsg, "error");
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Generate tags";
       chrome.storage.local.remove(pageUrl);
@@ -294,6 +300,23 @@ function buildExifTags(exif) {
   return tags.filter(t => t.length > 1);
 }
 
+function flashTag(text) {
+  // Find the chip with this text and flash it
+  const chips = document.querySelectorAll('.tag');
+  for (const chip of chips) {
+    if (chip.textContent.trim().startsWith(text)) {
+      const orig = chip.style.background;
+      chip.style.transition = "background 0.15s";
+      chip.style.background = "#ff3333";
+      setTimeout(() => {
+        chip.style.background = orig;
+        setTimeout(() => chip.style.transition = "", 300);
+      }, 600);
+      break;
+    }
+  }
+}
+
 function updateCopyBtnLabel() {
   const autofill = $("autofill-toggle").checked;
   $("copy-btn").textContent = autofill ? "📋 Copy tags and send to Flickr" : "📋 Copy tags to clipboard";
@@ -316,22 +339,31 @@ $("add-btn").addEventListener("click", () => {
     const { text: origText, state: origState } = editingTag;
     editingTag = null;
     if (t.length > 1) {
-      // Apply edit — replace editing tag with new text, same state
       if (!tags.some(x => x.text === t && x.state !== "editing")) {
         tags = tags.map(tag => tag.state === "editing" ? { text: t, state: origState } : tag);
       } else {
-        // Duplicate — just restore original
+        // Duplicate — restore original and flash the existing tag
         tags = tags.map(tag => tag.state === "editing" ? { text: origText, state: origState } : tag);
+        renderTags();
+        updateCopyRow();
+        flashTag(t);
+        input.focus();
+        input.select();
+        return;
       }
     } else {
-      // Empty input — restore original
       tags = tags.map(tag => tag.state === "editing" ? { text: origText, state: origState } : tag);
     }
   } else {
     if (!t || t.length <= 1) return;
-    if (!tags.find(x => x.text === t)) {
-      tags.push({ text: t, state: "kept" });
+    if (tags.find(x => x.text === t)) {
+      // Duplicate — flash the existing tag
+      flashTag(t);
+      input.focus();
+      input.select();
+      return;
     }
+    tags.push({ text: t, state: "kept" });
   }
 
   input.value = "";
