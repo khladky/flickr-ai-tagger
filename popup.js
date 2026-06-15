@@ -465,8 +465,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       response = await chrome.tabs.sendMessage(tab.id, { type: "GET_PHOTO_URL" });
     } catch {
-      setStatus("Couldn't connect to page — try refreshing it.", "error");
-      return;
+      // Content script not running — inject it and try once more
+      try {
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+        await new Promise(r => setTimeout(r, 500));
+        response = await chrome.tabs.sendMessage(tab.id, { type: "GET_PHOTO_URL" });
+      } catch {
+        setStatus("Couldn't connect to page — try refreshing it.", "error");
+        return;
+      }
     }
 
     if (response.error) { setStatus(response.error, "error"); return; }

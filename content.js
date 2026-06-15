@@ -1,9 +1,16 @@
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "GET_PHOTO_URL") {
+    handleGetPhotoUrl(sendResponse);
+    return true; // async
+  }
   if (msg.type === "FILL_TAGS") {
     fillTags(msg.tags).then(result => sendResponse(result)).catch(e => sendResponse({ error: e.message }));
     return true;
   }
-  if (msg.type !== "GET_PHOTO_URL") return;
+  return false;
+});
+
+async function handleGetPhotoUrl(sendResponse) {
 
   const existingTags = Array.from(document.querySelectorAll('a.tag-text'))
     .map(a => a.textContent.trim().toLowerCase())
@@ -23,11 +30,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   }
 
-  // Read EXIF data
+  // Read EXIF data — wait for DOM to be ready if needed
   const exif = {};
 
-  // Camera model
-  const cameraEl = document.querySelector('div.exif-camera-name a');
+  function waitForEl(selector, timeout = 3000) {
+    const el = document.querySelector(selector);
+    if (el) return Promise.resolve(el);
+    return new Promise(resolve => {
+      const observer = new MutationObserver(() => {
+        const found = document.querySelector(selector);
+        if (found) { observer.disconnect(); resolve(found); }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      setTimeout(() => { observer.disconnect(); resolve(null); }, timeout);
+    });
+  }
+
+  // Wait for camera element as signal that EXIF section is loaded
+  const cameraEl = await waitForEl('div.exif-camera-name a');
   if (cameraEl) exif.camera = cameraEl.textContent.trim();
 
   // Aperture, focal length, ISO, shutter speed
@@ -68,7 +88,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   sendResponse({ error: "Could not find photo on this page." });
-});
+}
 
 async function fillTags(tags) {
   const editBtn = document.querySelector('a.show-add-tags');
