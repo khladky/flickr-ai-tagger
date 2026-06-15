@@ -92,13 +92,15 @@ async function handleGetPhotoUrl(sendResponse) {
     const value = li.querySelector('span.exif-value')?.textContent.trim();
     if (!name || !value || value === 'N/A' || value === '0') return;
     if (name === 'Focal Length (35mm format)' && !exif.focalLength35) exif.focalLength35 = value;
-    // Take first non-N/A Lens Model found
-    if (name === 'Lens Model' && !exif.lensModel) exif.lensModel = value;
-    // Also try Lens Info as fallback for lens
-    if (name === 'Lens Info' && !exif.lensModel) exif.lensModel = value;
+    // Prefer Lens Model over Lens Info
+    if (name === 'Lens Model' && !exif.lensModelFull) exif.lensModelFull = value;
+    if (name === 'Lens Info' && !exif.lensInfo) exif.lensInfo = value;
   });
-  // Fall back to lens-string if no model found in extended EXIF
-  if (!exif.lensModel && exif.lensString) exif.lensModel = exif.lensString;
+  // Prefer Lens Model over Lens Info over lens-string
+  exif.lensModel = exif.lensModelFull || exif.lensInfo || exif.lensString || null;
+  delete exif.lensModelFull;
+  delete exif.lensInfo;
+  delete exif.lensString;
 
   // Validate focal length — reject obviously wrong values (e.g. 0mm)
   if (exif.focalLength && exif.focalLength.replace(/[^0-9.]/g, '') === '0') delete exif.focalLength;

@@ -304,9 +304,7 @@ function buildExifTags(exif) {
 
   // Shutter speed + long exposure detection
   if (exif.shutter && !isZeroOrEmpty(exif.shutter)) {
-    // Flickr strips slashes so 1/40 becomes 140 — use sec notation instead
-    const shutterClean = exif.shutter.replace(/\s+/g, "").replace("/", "-");
-    tags.push(shutterClean + "s");
+    tags.push(exif.shutter.replace(/\s+/g, "") + "s");
     const match = exif.shutter.match(/^(\d+)(?:\/(\d+))?/);
     if (match) {
       const seconds = match[2] ? parseInt(match[1]) / parseInt(match[2]) : parseInt(match[1]);
