@@ -92,7 +92,7 @@ Tick **Include camera and lens data as tags** to automatically add technical tag
 
 All EXIF tags are formatted to work correctly with Flickr's search. Double-clicking any EXIF tag on the Flickr photo page will search for other photos with that camera, lens, aperture or shutter speed etc. tag.
 
-Individual EXIF tags can be removed by clicking **×** on them. If the photo has no EXIF data, or the owner has hidden it, a brief message will say "No camera data available for this photo."
+Individual EXIF tags can be removed by clicking **×** on them before they are sent to Flickr. If the photo has no EXIF data, or the owner has hidden it, a brief message will say "No camera data available for this photo."
 
 ## Keyboard shortcut
 
