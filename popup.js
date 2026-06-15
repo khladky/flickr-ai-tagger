@@ -257,6 +257,58 @@ $("exif-toggle").addEventListener("change", () => {
   chrome.storage.local.set({ includeExif: $("exif-toggle").checked });
 });
 
+// Machine tag toggle
+chrome.storage.local.get("includeMachineTags", ({ includeMachineTags }) => {
+  $("machine-toggle").checked = !!includeMachineTags;
+});
+$("machine-toggle").addEventListener("change", () => {
+  chrome.storage.local.set({ includeMachineTags: $("machine-toggle").checked });
+});
+
+function buildMachineTags(exif) {
+  const tags = [];
+  if (!exif || Object.keys(exif).length === 0) return tags;
+
+  // Camera make and model — split on first space
+  if (exif.camera) {
+    const parts = exif.camera.trim().split(/\s+/);
+    const make = parts[0].toLowerCase();
+    const model = parts.slice(1).join("-").toLowerCase();
+    tags.push(`camera:make=${make}`);
+    if (model) tags.push(`camera:model=${model}`);
+  }
+
+  // Lens model
+  if (exif.lensModel && exif.lensModel !== "N/A" && exif.lensModel.length < 60) {
+    tags.push(`lens:model=${exif.lensModel.toLowerCase().replace(/\s+/g, "-")}`);
+  }
+
+  // Actual focal length (not 35mm equivalent)
+  if (exif.focalLength) {
+    const fl = exif.focalLength.replace(/\s+/g, "").toLowerCase().replace(/[^a-z0-9.]/g, "");
+    tags.push(`exif:focallength=${fl}`);
+  }
+
+  // Aperture
+  if (exif.aperture) {
+    const ap = exif.aperture.replace("ƒ/", "").replace(/\s+/g, "");
+    tags.push(`exif:aperture=f${ap}`);
+  }
+
+  // ISO
+  if (exif.iso) {
+    tags.push(`exif:iso=${exif.iso.replace(/\s+/g, "")}`);
+  }
+
+  // Shutter speed
+  if (exif.shutter) {
+    const s = exif.shutter.replace(/\s+/g, "");
+    tags.push(`exif:exposure=${s}`);
+  }
+
+  return tags.filter(t => t.length > 1);
+}
+
 function buildExifTags(exif) {
   const tags = [];
   if (!exif || Object.keys(exif).length === 0) return tags;
@@ -493,13 +545,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderTags();
     }
 
-    // Add EXIF tags if toggle is on
-    const { includeExif } = await chrome.storage.local.get("includeExif");
+    // Add EXIF and/or machine tags if toggles are on
+    const { includeExif, includeMachineTags } = await chrome.storage.local.get(["includeExif", "includeMachineTags"]);
+    const allExifTags = [];
+
     if (includeExif) {
-      const exifTags = buildExifTags(response.exif);
-      if (exifTags.length > 0) {
+      allExifTags.push(...buildExifTags(response.exif));
+    }
+    if (includeMachineTags) {
+      allExifTags.push(...buildMachineTags(response.exif));
+    }
+
+    if (includeExif || includeMachineTags) {
+      if (allExifTags.length > 0) {
         const existingTexts = tags.map(t => t.text);
-        const toAdd = exifTags
+        const toAdd = allExifTags
           .filter(t => !existingTexts.includes(t))
           .map(t => ({ text: t, state: "exif" }));
         if (toAdd.length > 0) {
