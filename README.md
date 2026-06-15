@@ -43,7 +43,7 @@ The popup can be closed while tags are generating — a blue badge appears on th
 
 Tags are colour coded:
 
-- **Blue** — already on this photo in Flickr. Shown for reference, not included in the copy.
+- **Blue** — already on this photo in Flickr. Shown for reference, not included in the copy. Tags already on Flickr can only be removed via the photo's own tag editor on the Flickr photo page, not through this extension.
 - **Yellow** — freshly suggested by Gemini. Remove any you don't want by clicking **×**.
 - **Purple** — tags you have added manually.
 - **Purple (labelled "Added from EXIF")** — tags automatically read from the photo's camera data (see below).
@@ -60,6 +60,8 @@ Tags are colour coded:
 Tick **Auto-fill Flickr tag field on copy** to have the extension open Flickr's tag editor, paste the tags, and submit them automatically. The popup closes once done and the page scrolls to show the updated tags.
 
 Once the popup has closed after auto-filling, the left and right arrow keys can be used to navigate to the previous or next photo in your Flickr stream.
+
+**Note:** Once tags have been sent to Flickr they can only be removed via the photo's own tag editor on the Flickr photo page, not through this extension.
 
 ## Google Lens
 
@@ -81,12 +83,14 @@ Both sources are passed to Gemini which generates the most accurate location tag
 Tick **Include camera and lens data as tags** to automatically add technical tags from the photo's embedded EXIF data. These appear immediately when the popup opens, without needing a Gemini call, under the label "Added from EXIF". Fields included where available:
 
 - Camera make and model (e.g. `panasonic-dmc-tz100`)
-- Lens model (e.g. `leica-dc-vario-elmarit-9.1-91mm`)
+- Lens model (e.g. `leica-dc-vario-elmarit-91-91mm`)
 - Focal length in 35mm equivalent (e.g. `25mm`)
 - Aperture (e.g. `f2.8`)
 - Shutter speed (e.g. `1/500s`)
 - ISO (e.g. `iso-125`)
 - `long-exposure` — added automatically if shutter speed is 1 second or longer
+
+All EXIF tags are formatted to work correctly with Flickr's search. Double-clicking any EXIF tag on the Flickr photo page will search for other photos with that camera, lens, aperture or shutter speed etc. tag.
 
 Individual EXIF tags can be removed by clicking **×** on them. If the photo has no EXIF data, or the owner has hidden it, a brief message will say "No camera data available for this photo."
 

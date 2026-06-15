@@ -46,9 +46,32 @@ async function handleGetPhotoUrl(sendResponse) {
     });
   }
 
-  // Wait for camera element as signal that EXIF section is loaded
-  const cameraEl = await waitForEl('div.exif-camera-name a');
-  if (cameraEl) exif.camera = cameraEl.textContent.trim();
+  // Wait for camera element — may be a link or plain text
+  await waitForEl('div.exif-camera-name');
+  const cameraLink = document.querySelector('div.exif-camera-name a');
+  if (cameraLink) {
+    // Extract clean make/model from URL e.g. /cameras/panasonic/dc-g9/
+    const urlMatch = (cameraLink.getAttribute('href') || '').match(/\/cameras\/([^/]+)\/([^/]+)\//);
+    if (urlMatch) {
+      exif.camera = (urlMatch[1] + '-' + urlMatch[2]).replace(/_/g, '-').toLowerCase();
+    } else {
+      const cam = cameraLink.textContent.trim();
+      if (cam) exif.camera = cam;
+    }
+  } else {
+    const cameraEl = document.querySelector('div.exif-camera-name');
+    if (cameraEl) {
+      const cam = cameraEl.textContent.trim();
+      if (cam) exif.camera = cam;
+    }
+  }
+
+  // Lens string — visible on page (fallback if no extended EXIF lens model)
+  const lensStringEl = document.querySelector('div.lens-string');
+  if (lensStringEl) {
+    const ls = lensStringEl.textContent.trim();
+    if (ls && ls !== 'N/A') exif.lensString = ls;
+  }
 
   // Aperture, focal length, ISO, shutter speed
   const apertureEl = document.querySelector('li.c-charm-item-aperture span');
@@ -67,10 +90,19 @@ async function handleGetPhotoUrl(sendResponse) {
   document.querySelectorAll('li.extended-exif-item').forEach(li => {
     const name = li.querySelector('span.exif-name')?.textContent.replace(' - ', '').trim();
     const value = li.querySelector('span.exif-value')?.textContent.trim();
-    if (!name || !value) return;
-    if (name === 'Focal Length (35mm format)') exif.focalLength35 = value;
-    if (name === 'Lens Model' && value !== 'N/A' && !exif.lensModel) exif.lensModel = value;
+    if (!name || !value || value === 'N/A' || value === '0') return;
+    if (name === 'Focal Length (35mm format)' && !exif.focalLength35) exif.focalLength35 = value;
+    // Take first non-N/A Lens Model found
+    if (name === 'Lens Model' && !exif.lensModel) exif.lensModel = value;
+    // Also try Lens Info as fallback for lens
+    if (name === 'Lens Info' && !exif.lensModel) exif.lensModel = value;
   });
+  // Fall back to lens-string if no model found in extended EXIF
+  if (!exif.lensModel && exif.lensString) exif.lensModel = exif.lensString;
+
+  // Validate focal length — reject obviously wrong values (e.g. 0mm)
+  if (exif.focalLength && exif.focalLength.replace(/[^0-9.]/g, '') === '0') delete exif.focalLength;
+  if (exif.focalLength35 && exif.focalLength35.replace(/[^0-9.]/g, '') === '0') delete exif.focalLength35;
 
   const og = document.querySelector('meta[property="og:image"]');
   if (og && og.content) {

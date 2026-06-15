@@ -194,15 +194,16 @@ async function startGeneration(photoUrl, coords, flickrLocation, tabId) {
     return;
   }
 
-  setStatus("⏳ Preparing image…");
   $("gen-btn").disabled = true;
+  $("gen-btn").textContent = "Reading photo…";
+  setStatus("⏳ Preparing image…");
 
   try {
     const base64 = await resizeToBase64(photoUrl);
     await chrome.storage.local.set({ [pageUrl]: { status: "pending", tags: [], timestamp: Date.now() } });
     chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, flickrLocation, tabId, pageUrl });
-    setStatus("⚡ Generating in background — you can close this popup", "warning");
-    $("gen-btn").textContent = "Generating…";
+    setStatus("⚡ Asking Gemini — you can close this popup", "warning");
+    $("gen-btn").textContent = "Asking Gemini…";
     startPolling();
   } catch (e) {
     setStatus("Failed to prepare image: " + e.message, "error");
@@ -257,39 +258,55 @@ $("exif-toggle").addEventListener("change", () => {
   chrome.storage.local.set({ includeExif: $("exif-toggle").checked });
 });
 
+function isZeroOrEmpty(val) {
+  if (!val) return true;
+  const v = val.trim().replace(/[^0-9.]/g, "");
+  return v === "" || v === "0" || v === "0.0";
+}
+
 function buildExifTags(exif) {
   const tags = [];
   if (!exif || Object.keys(exif).length === 0) return tags;
 
   // Camera make/model — clean up and hyphenate
-  if (exif.camera) {
+  if (exif.camera && exif.camera.trim()) {
     tags.push(exif.camera.toLowerCase().replace(/\s+/g, "-"));
   }
 
-  // Lens model — skip if N/A or very long
-  if (exif.lensModel && exif.lensModel !== "N/A" && exif.lensModel.length < 60) {
-    tags.push(exif.lensModel.toLowerCase().replace(/\s+/g, "-"));
+  // Lens model — skip if N/A, empty or very long
+  if (exif.lensModel && exif.lensModel !== "N/A" && exif.lensModel !== "n/a"
+      && exif.lensModel.trim() && exif.lensModel.length < 60) {
+    tags.push(exif.lensModel.toLowerCase().replace(/\//g, "").replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
   }
 
-  // Focal length — prefer 35mm equivalent
+  // Focal length — prefer 35mm equivalent, parse to clean number
   const fl = exif.focalLength35 || exif.focalLength;
-  if (fl) {
-    tags.push(fl.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
+  if (fl && !isZeroOrEmpty(fl)) {
+    const flMatch = fl.match(/([\d.]+)\s*mm/i);
+    if (flMatch) {
+      const num = parseFloat(flMatch[1]);
+      if (num > 0) {
+        const tag = (num % 1 === 0 ? num.toFixed(0) : flMatch[1]) + "mm";
+        tags.push(tag);
+      }
+    }
   }
 
-  // Aperture
-  if (exif.aperture) {
+  // Aperture — skip if zero
+  if (exif.aperture && !isZeroOrEmpty(exif.aperture)) {
     tags.push(exif.aperture.replace("ƒ/", "f").replace(/\s+/g, "").toLowerCase());
   }
 
-  // ISO
-  if (exif.iso) {
+  // ISO — skip if zero
+  if (exif.iso && !isZeroOrEmpty(exif.iso)) {
     tags.push("iso-" + exif.iso.replace(/\s+/g, ""));
   }
 
   // Shutter speed + long exposure detection
-  if (exif.shutter) {
-    tags.push(exif.shutter.replace(/\s+/g, "") + "s");
+  if (exif.shutter && !isZeroOrEmpty(exif.shutter)) {
+    // Flickr strips slashes so 1/40 becomes 140 — use sec notation instead
+    const shutterClean = exif.shutter.replace(/\s+/g, "").replace("/", "-");
+    tags.push(shutterClean + "s");
     const match = exif.shutter.match(/^(\d+)(?:\/(\d+))?/);
     if (match) {
       const seconds = match[2] ? parseInt(match[1]) / parseInt(match[2]) : parseInt(match[1]);
