@@ -11,6 +11,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     fillTitleDesc(msg.title, msg.description, msg.titleMode, msg.descMode).then(result => sendResponse(result)).catch(e => sendResponse({ error: e.message }));
     return true;
   }
+  if (msg.type === "NAVIGATE") {
+    const key = msg.direction === "prev" ? "ArrowLeft" : "ArrowRight";
+    const code = msg.direction === "prev" ? "ArrowLeft" : "ArrowRight";
+    const keyCode = msg.direction === "prev" ? 37 : 39;
+    const evt = new KeyboardEvent("keydown", {
+      key, code, keyCode, which: keyCode, bubbles: true, cancelable: true
+    });
+    document.dispatchEvent(evt);
+    sendResponse({ ok: true });
+    return false;
+  }
   return false;
 });
 

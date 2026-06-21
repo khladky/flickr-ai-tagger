@@ -7,6 +7,23 @@ let currentExif = null; // raw EXIF data from content script, for live toggle
 
 const $ = id => document.getElementById(id);
 
+// Arrow key navigation — works even while popup is open, skips when typing in a field
+document.addEventListener("keydown", async (e) => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  const active = document.activeElement;
+  const tagName = active ? active.tagName : "";
+  const isEditable = tagName === "INPUT" || tagName === "TEXTAREA" || (active && active.isContentEditable);
+  if (isEditable) return;
+  if (!pageUrl) return; // not yet on a recognised Flickr photo page
+
+  e.preventDefault();
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    chrome.tabs.sendMessage(tab.id, { type: "NAVIGATE", direction: e.key === "ArrowLeft" ? "prev" : "next" });
+  } catch {}
+  window.close();
+});
+
 // Show version from manifest and link to GitHub
 chrome.runtime.getManifest && document.addEventListener("DOMContentLoaded", () => {
   const v = chrome.runtime.getManifest().version;
@@ -329,18 +346,43 @@ $("copy-desc-btn").addEventListener("click", async () => {
   } catch {}
 });
 
-// Mutually exclusive title/description append-replace checkboxes
+// Mutually exclusive title/description append-replace checkboxes, with persistence
+function saveTitleDescModes() {
+  chrome.storage.local.set({
+    titleMode: $("title-replace").checked ? "replace" : $("title-append").checked ? "append" : "skip",
+    descMode: $("desc-replace").checked ? "replace" : $("desc-append").checked ? "append" : "skip"
+  });
+}
+
+chrome.storage.local.get(["titleMode", "descMode"], ({ titleMode, descMode }) => {
+  if (titleMode === "replace") {
+    $("title-replace").checked = true; $("title-append").checked = false;
+  } else if (titleMode === "skip") {
+    $("title-replace").checked = false; $("title-append").checked = false;
+  } // else leave default (append checked)
+
+  if (descMode === "replace") {
+    $("desc-replace").checked = true; $("desc-append").checked = false;
+  } else if (descMode === "skip") {
+    $("desc-replace").checked = false; $("desc-append").checked = false;
+  }
+});
+
 $("title-append").addEventListener("change", () => {
   if ($("title-append").checked) $("title-replace").checked = false;
+  saveTitleDescModes();
 });
 $("title-replace").addEventListener("change", () => {
   if ($("title-replace").checked) $("title-append").checked = false;
+  saveTitleDescModes();
 });
 $("desc-append").addEventListener("change", () => {
   if ($("desc-append").checked) $("desc-replace").checked = false;
+  saveTitleDescModes();
 });
 $("desc-replace").addEventListener("change", () => {
   if ($("desc-replace").checked) $("desc-append").checked = false;
+  saveTitleDescModes();
 });
 
 $("send-titledesc-btn").addEventListener("click", async () => {
@@ -360,7 +402,12 @@ $("send-titledesc-btn").addEventListener("click", async () => {
       setStatus("Failed to send: " + result.error, "error");
       btn.textContent = "Send title & description to Flickr";
     } else {
-      btn.textContent = "✓ Sent to Flickr";
+      btn.textContent = "✓ Sent — click again to resend";
+      setTimeout(() => {
+        if (btn.textContent === "✓ Sent — click again to resend") {
+          btn.textContent = "Send title & description to Flickr";
+        }
+      }, 2500);
     }
   } catch (e) {
     setStatus("Failed to send: " + e.message, "error");

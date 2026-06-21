@@ -72,7 +72,7 @@ A small 📋 button next to the tag listing box copies the tag list to your clip
 
 A **Send tags to Flickr** button also appears — clicking it opens Flickr's tag editor, pastes the tags, and submits them automatically. Once sent successfully, those tags move into the blue "Already on Flickr" section in the popup, reflecting what is now actually on the photo.
 
-The left and right arrow keys can be used to navigate to the previous or next photo in your Flickr stream once you're done with a photo.
+The left and right arrow keys can be used at any time while the popup is open to navigate to the previous or next photo in your Flickr stream — pressing one closes the popup and moves to the next photo automatically. This is disabled while typing in a tag, title or description field so the arrow keys move the cursor as normal.
 
 **Note:** Once tags have been sent to Flickr they can only be removed via the photo's own tag editor on the Flickr photo page, not through this extension.
 
@@ -87,9 +87,9 @@ For each of the title and the description, two checkboxes control what happens w
 - **Append** (default) — adds the new text after whatever is already there.
 - **Replace** — overwrites the existing title or description entirely.
 
-Leave both checkboxes for a field unticked to leave that field untouched when sending. Ticking one automatically unticks the other for that field.
+Leave both checkboxes for a field unticked to leave that field untouched when sending. Ticking one automatically unticks the other for that field. Your choice is remembered between photos.
 
-Click **Send title & description to Flickr** to apply the changes. This can be sent repeatedly if needed — for example after editing the text further.
+Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so the title or description can be edited further and sent again if needed — use the arrow keys when you are ready to move to the next photo.
 
 ## Google Lens
 
