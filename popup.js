@@ -3,6 +3,7 @@ let tags = [];
 let previousTags = null; // for undo
 let editingTag = null;  // { text, state } of tag currently being edited
 let pageUrl = null;
+let currentExif = null; // raw EXIF data from content script, for live toggle
 
 const $ = id => document.getElementById(id);
 
@@ -92,7 +93,7 @@ function makeChip(tag) {
       }
       // Save pending input as kept tag
       const pending = input.value.trim().toLowerCase().replace(/\s+/g, "-").replace(/^[-]+/, "");
-      if (pending.length > 1 && !tags.some(x => x.text === pending)) {
+      if (pending.length > 0 && !tags.some(x => x.text === pending)) {
         tags = [...tags, { text: pending, state: "kept" }];
       }
       // Mark this tag as editing
@@ -168,9 +169,11 @@ function startPolling() {
     pollTimer = null;
     if (entry.status === "done") {
       showResults(entry.tags);
-      clearStatus();
+      showTitleDesc(entry.title, entry.description);
+      setStatus("✓ Gemini results received", "success");
+      setTimeout(clearStatus, 1500);
       $("gen-btn").disabled = false;
-      $("gen-btn").textContent = "Regenerate tags";
+      $("gen-btn").textContent = "Regenerate";
     } else {
       const errorType = entry.errorType || "server";
       const errorMsg = errorType === "auth"
@@ -180,7 +183,7 @@ function startPolling() {
         : "Gemini error — server busy, try again";
       setStatus(errorMsg, "error");
       $("gen-btn").disabled = false;
-      $("gen-btn").textContent = "Generate tags";
+      $("gen-btn").textContent = "Generate";
       chrome.storage.local.remove(pageUrl);
     }
   }, 1000);
@@ -194,6 +197,15 @@ async function startGeneration(photoUrl, coords, flickrLocation, tabId) {
     return;
   }
 
+  const { genTags, titleDesc } = await chrome.storage.local.get(["genTags", "titleDesc"]);
+  const wantTags = genTags === undefined ? true : !!genTags;
+  const wantTitleDesc = !!titleDesc;
+
+  if (!wantTags && !wantTitleDesc) {
+    setStatus("⚠️ Nothing selected to generate — tick Generate Flickr tags and/or Generate title & description", "warning");
+    return;
+  }
+
   $("gen-btn").disabled = true;
   $("gen-btn").textContent = "Reading photo…";
   setStatus("⏳ Preparing image…");
@@ -201,14 +213,14 @@ async function startGeneration(photoUrl, coords, flickrLocation, tabId) {
   try {
     const base64 = await resizeToBase64(photoUrl);
     await chrome.storage.local.set({ [pageUrl]: { status: "pending", tags: [], timestamp: Date.now() } });
-    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, flickrLocation, tabId, pageUrl });
+    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, flickrLocation, genTags: wantTags, genTitleDesc: wantTitleDesc, tabId, pageUrl });
     setStatus("⚡ Asking Gemini — you can close this popup", "warning");
     $("gen-btn").textContent = "Asking Gemini…";
     startPolling();
   } catch (e) {
     setStatus("Failed to prepare image: " + e.message, "error");
     $("gen-btn").disabled = false;
-    $("gen-btn").textContent = "Generate tags";
+    $("gen-btn").textContent = "Generate";
   }
 }
 
@@ -241,7 +253,7 @@ $("clear-cache-btn").addEventListener("click", async () => {
     tags = tags.filter(t => t.state === "existing");
     renderTags();
     updateCopyRow();
-    $("gen-btn").textContent = "Generate tags";
+    $("gen-btn").textContent = "Generate";
     setStatus("Cached tags cleared.", "success");
     setTimeout(clearStatus, 2000);
   } else {
@@ -250,13 +262,126 @@ $("clear-cache-btn").addEventListener("click", async () => {
   }
 });
 
+// Generate Flickr tags toggle — default true (checked)
+chrome.storage.local.get("genTags", ({ genTags }) => {
+  $("gentags-toggle").checked = genTags === undefined ? true : !!genTags;
+});
+$("gentags-toggle").addEventListener("change", () => {
+  chrome.storage.local.set({ genTags: $("gentags-toggle").checked });
+});
+
 // EXIF toggle
 chrome.storage.local.get("includeExif", ({ includeExif }) => {
   $("exif-toggle").checked = !!includeExif;
 });
 $("exif-toggle").addEventListener("change", () => {
-  chrome.storage.local.set({ includeExif: $("exif-toggle").checked });
+  const checked = $("exif-toggle").checked;
+  chrome.storage.local.set({ includeExif: checked });
+
+  if (!currentExif) return; // photo data not loaded yet (e.g. on a non-Flickr page)
+
+  if (checked) {
+    const exifTags = buildExifTags(currentExif);
+    if (exifTags.length > 0) {
+      const existingTexts = tags.map(t => t.text);
+      const toAdd = exifTags
+        .filter(t => !existingTexts.includes(t))
+        .map(t => ({ text: t, state: "exif" }));
+      if (toAdd.length > 0) {
+        tags = [...tags, ...toAdd];
+        $("tags-wrap").style.display = "block";
+        renderTags();
+        updateCopyRow();
+      }
+    } else {
+      setStatus("No camera data available for this photo.", "");
+      setTimeout(clearStatus, 3000);
+    }
+  } else {
+    // Remove any EXIF tags currently shown
+    tags = tags.filter(t => t.state !== "exif");
+    renderTags();
+    updateCopyRow();
+  }
 });
+
+// Title & description toggle
+chrome.storage.local.get("titleDesc", ({ titleDesc }) => {
+  $("titledesc-toggle").checked = !!titleDesc;
+});
+$("titledesc-toggle").addEventListener("change", () => {
+  chrome.storage.local.set({ titleDesc: $("titledesc-toggle").checked });
+});
+
+$("copy-title-btn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("title-line").value);
+    $("copy-title-btn").textContent = "✓";
+    setTimeout(() => $("copy-title-btn").textContent = "📋", 1500);
+  } catch {}
+});
+
+$("copy-desc-btn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("desc-line").value);
+    $("copy-desc-btn").textContent = "✓";
+    setTimeout(() => $("copy-desc-btn").textContent = "📋", 1500);
+  } catch {}
+});
+
+// Mutually exclusive title/description append-replace checkboxes
+$("title-append").addEventListener("change", () => {
+  if ($("title-append").checked) $("title-replace").checked = false;
+});
+$("title-replace").addEventListener("change", () => {
+  if ($("title-replace").checked) $("title-append").checked = false;
+});
+$("desc-append").addEventListener("change", () => {
+  if ($("desc-append").checked) $("desc-replace").checked = false;
+});
+$("desc-replace").addEventListener("change", () => {
+  if ($("desc-replace").checked) $("desc-append").checked = false;
+});
+
+$("send-titledesc-btn").addEventListener("click", async () => {
+  const title = $("title-line").value;
+  const description = $("desc-line").value;
+  const titleMode = $("title-replace").checked ? "replace" : $("title-append").checked ? "append" : "skip";
+  const descMode = $("desc-replace").checked ? "replace" : $("desc-append").checked ? "append" : "skip";
+  const btn = $("send-titledesc-btn");
+  btn.disabled = true;
+  btn.textContent = "Sending to Flickr…";
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const result = await chrome.tabs.sendMessage(tab.id, {
+      type: "FILL_TITLE_DESC", title, description, titleMode, descMode
+    });
+    if (result?.error) {
+      setStatus("Failed to send: " + result.error, "error");
+      btn.textContent = "Send title & description to Flickr";
+    } else {
+      btn.textContent = "✓ Sent to Flickr";
+    }
+  } catch (e) {
+    setStatus("Failed to send: " + e.message, "error");
+    btn.textContent = "Send title & description to Flickr";
+  }
+  btn.disabled = false;
+});
+
+async function showTitleDesc(title, description) {
+  const { titleDesc } = await chrome.storage.local.get("titleDesc");
+  if (!title && !description) {
+    $("titledesc-wrap").style.display = "none";
+    if (titleDesc) {
+      setStatus("⚠️ Gemini did not return a title/description — try regenerating", "warning");
+    }
+    return;
+  }
+  $("title-line").value = title || "";
+  $("desc-line").value = description || "";
+  $("titledesc-wrap").style.display = "block";
+}
 
 function isZeroOrEmpty(val) {
   if (!val) return true;
@@ -332,18 +457,12 @@ function flashTag(text) {
   }
 }
 
-function updateCopyBtnLabel() {
-  const autofill = $("autofill-toggle").checked;
-  $("copy-btn").textContent = autofill ? "📋 Copy tags and send to Flickr" : "📋 Copy tags to clipboard";
-}
-
-chrome.storage.local.get("autofill", ({ autofill }) => {
-  $("autofill-toggle").checked = !!autofill;
-  updateCopyBtnLabel();
-});
-$("autofill-toggle").addEventListener("change", () => {
-  chrome.storage.local.set({ autofill: $("autofill-toggle").checked });
-  updateCopyBtnLabel();
+$("copy-tagline-btn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("tag-line").value);
+    $("copy-tagline-btn").textContent = "✓";
+    setTimeout(() => $("copy-tagline-btn").textContent = "📋", 1500);
+  } catch {}
 });
 
 $("add-btn").addEventListener("click", () => {
@@ -353,7 +472,7 @@ $("add-btn").addEventListener("click", () => {
   if (editingTag) {
     const { text: origText, state: origState } = editingTag;
     editingTag = null;
-    if (t.length > 1) {
+    if (t.length > 0) {
       if (!tags.some(x => x.text === t && x.state !== "editing")) {
         tags = tags.map(tag => tag.state === "editing" ? { text: t, state: origState } : tag);
       } else {
@@ -370,7 +489,7 @@ $("add-btn").addEventListener("click", () => {
       tags = tags.map(tag => tag.state === "editing" ? { text: origText, state: origState } : tag);
     }
   } else {
-    if (!t || t.length <= 1) return;
+    if (!t || t.length === 0) return;
     if (tags.find(x => x.text === t)) {
       // Duplicate — flash the existing tag
       flashTag(t);
@@ -402,33 +521,51 @@ $("new-tag").addEventListener("keydown", e => {
 
 $("copy-btn").addEventListener("click", async () => {
   const tagLine = $("tag-line").value;
-  const { autofill } = await chrome.storage.local.get("autofill");
 
   try {
     await navigator.clipboard.writeText(tagLine);
-    if (pageUrl) chrome.storage.local.remove(pageUrl);
   } catch {
     $("tag-line").select();
     document.execCommand("copy");
   }
 
-  if (autofill) {
-    try {
-      $("copy-btn").textContent = "Sending to Flickr…";
-      $("copy-btn").className = "copied";
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      chrome.tabs.sendMessage(tab.id, { type: "FILL_TAGS", tags: tagLine }, () => {});
-      $("copy-btn").textContent = "Waiting for Flickr…";
-      await new Promise(r => setTimeout(r, 4000));
-      $("copy-btn").textContent = "✓ Done!";
+  try {
+    $("copy-btn").textContent = "Sending to Flickr…";
+    $("copy-btn").className = "copied";
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const sendPromise = chrome.tabs.sendMessage(tab.id, { type: "FILL_TAGS", tags: tagLine });
+    const waitingTimer = setTimeout(() => {
+      if ($("copy-btn").textContent === "Sending to Flickr…") $("copy-btn").textContent = "Waiting for Flickr…";
+    }, 500);
+    const result = await sendPromise;
+    clearTimeout(waitingTimer);
+
+    if (result?.error) {
+      setStatus("Auto-fill failed: " + result.error, "error");
+      $("copy-btn").textContent = "📋 Send tags to Flickr";
+      $("copy-btn").className = "";
+      return;
+    }
+
+    // Success — promote sent tags to "existing" so they no longer show as new/kept
+    tags = tags.map(t =>
+      (t.state === "new" || t.state === "kept" || t.state === "exif")
+        ? { text: t.text, state: "existing" }
+        : t
+    );
+    renderTags();
+    updateCopyRow();
+
+    $("copy-btn").textContent = "✓ Done!";
+    const { titleDesc } = await chrome.storage.local.get("titleDesc");
+    if (!titleDesc) {
       await new Promise(r => setTimeout(r, 800));
       window.close();
-    } catch (e) {
-      setStatus("Auto-fill failed: " + e.message, "error");
     }
-  } else {
-    $("copy-btn").textContent = "✓ Copied!";
-    $("copy-btn").className = "copied";
+  } catch (e) {
+    setStatus("Auto-fill failed: " + e.message, "error");
+    $("copy-btn").textContent = "📋 Send tags to Flickr";
+    $("copy-btn").className = "";
   }
 });
 
@@ -509,6 +646,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Add EXIF tags if toggle is on
+    currentExif = response.exif;
     const { includeExif } = await chrome.storage.local.get("includeExif");
     if (includeExif) {
       const exifTags = buildExifTags(response.exif);
@@ -538,9 +676,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         showResults(entry.tags);
       }
+      showTitleDesc(entry.title, entry.description);
       clearStatus();
       $("gen-btn").disabled = false;
-      $("gen-btn").textContent = "Regenerate tags";
+      $("gen-btn").textContent = "Regenerate";
     } else if (entry?.status === "pending") {
       setStatus("⚡ Generating in background — you can close this popup", "warning");
       $("gen-btn").disabled = true;
@@ -549,7 +688,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       clearStatus();
       $("gen-btn").disabled = false;
-      $("gen-btn").textContent = "Generate tags";
+      $("gen-btn").textContent = "Generate";
     }
 
     $("gen-btn").addEventListener("click", e => {

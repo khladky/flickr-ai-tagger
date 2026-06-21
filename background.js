@@ -88,6 +88,27 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
+function stripTrailingLocationJunk(desc) {
+  // Find the last sentence-ending punctuation
+  const match = desc.match(/^([\s\S]*?[.!?])\s*([\s\S]*)$/);
+  if (!match) return desc;
+  const [, sentence, trailing] = match;
+  if (!trailing.trim()) return desc;
+
+  // If the trailing text after the last real sentence has no terminal
+  // punctuation of its own and is mostly capitalised words (typical of a
+  // leaked "Place, Region, Country" style location string), drop it.
+  const words = trailing.trim().split(/\s+/);
+  const capWords = words.filter(w => /^[A-Z]/.test(w));
+  const ratio = capWords.length / words.length;
+  const hasTerminalPunctuation = /[.!?]$/.test(trailing.trim());
+
+  if (!hasTerminalPunctuation && ratio > 0.6) {
+    return sentence.trim();
+  }
+  return desc;
+}
+
 async function geminiCall(apiKey, base64, prompt, maxTokens) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
@@ -112,7 +133,7 @@ async function geminiCall(apiKey, base64, prompt, maxTokens) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }) {
+async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitleDesc, tabId, pageUrl }) {
   chrome.action.setBadgeText({ text: "…", tabId });
   chrome.action.setBadgeBackgroundColor({ color: "#4285f4", tabId });
 
@@ -146,29 +167,70 @@ async function handleGenerate({ base64, coords, flickrLocation, tabId, pageUrl }
       ? ` Location data: ${locationSources.join(". ")}. Include relevant location tags from specific neighbourhood level down to country.`
       : "";
 
-    // Generate tags
-    const tagText = await geminiCall(
-      geminiApiKey, base64,
-      PROMPT_BASE + locationContext,
-      250
-    );
+    // Generate tags (skipped if genTags is false)
+    let tags = [];
+    if (genTags) {
+      const tagText = await geminiCall(
+        geminiApiKey, base64,
+        PROMPT_BASE + locationContext,
+        250
+      );
 
-    const generalTags = tagText.split(",")
-      .map(t => t.trim().toLowerCase().replace(/^[-\s]+/, "").replace(/\s+/g, "-"))
-      .filter(t => t.length > 1);
+      const generalTags = tagText.split(",")
+        .map(t => t.trim().toLowerCase().replace(/^[-\s]+/, "").replace(/\s+/g, "-"))
+        .filter(t => t.length > 1);
 
-    // Deduplicate tags
-    const seen = new Set();
-    const tags = generalTags.filter(t => {
-      if (seen.has(t)) return false;
-      seen.add(t);
-      return true;
-    });
+      // Deduplicate tags
+      const seen = new Set();
+      tags = generalTags.filter(t => {
+        if (seen.has(t)) return false;
+        seen.add(t);
+        return true;
+      });
 
-    if (!tags.length) throw new Error("No tags returned");
+      if (!tags.length) throw new Error("No tags returned");
+    }
+
+    // Optional: generate title and description
+    let title = null, description = null;
+    if (genTitleDesc) {
+      try {
+        // Use a single simple location name, not the multi-source dump used for tags
+        const simpleLocation = locationText || flickrLocation || null;
+        const tdLocationHint = simpleLocation
+          ? ` If natural, you may mention that this was taken in or near ${simpleLocation} — but only as part of normal sentence flow, never as a list or label.`
+          : "";
+
+        const tdText = await geminiCall(
+          geminiApiKey, base64,
+          `Generate a short, natural Flickr photo title and a three-to-four sentence description.${tdLocationHint} Reply in EXACTLY this format and nothing else — exactly two lines, no other labels, no extra information:\nTITLE: <title here>\nDESCRIPTION: <description here>\nThe title should be concise (under 10 words), engaging, and not generic. The description should add context a viewer would find interesting — do not just restate the title. Write with confidence — describe what is happening directly, avoid hedging words like "appears to be", "suggests", "possibly", "seems to", "hinting at". State things plainly as fact based on what is visible. The description must be normal flowing prose only — never append place names, addresses, or comma-separated location lists at the end. Do not add a location line, hashtags, or any other field.`,
+          400
+        );
+        const titleMatch = tdText.match(/TITLE:\s*(.+)/i);
+        const descMatch = tdText.match(/DESCRIPTION:\s*([^\n]+(?:\n(?![A-Z]+:)[^\n]*)*)/i);
+        if (titleMatch) title = titleMatch[1].trim();
+        if (descMatch) {
+          let desc = descMatch[1].trim();
+          // Safety net: strip a trailing line that looks like a leaked location
+          // (no terminal sentence punctuation, or matches known location strings)
+          const lines = desc.split("\n").map(l => l.trim()).filter(Boolean);
+          if (lines.length > 1) {
+            const last = lines[lines.length - 1];
+            const looksLikeLocation =
+              !/[.!?]$/.test(last) ||
+              (flickrLocation && last.toLowerCase() === flickrLocation.toLowerCase()) ||
+              (locationText && last.toLowerCase() === locationText.toLowerCase());
+            if (looksLikeLocation) lines.pop();
+          }
+          description = stripTrailingLocationJunk(lines.join(" ").trim());
+        }
+      } catch (e) {
+        // Non-fatal — tags still succeed even if title/description fails
+      }
+    }
 
     clearTimeout(timeout);
-    await chrome.storage.local.set({ [pageUrl]: { status: "done", tags, timestamp: Date.now() } });
+    await chrome.storage.local.set({ [pageUrl]: { status: "done", tags, title, description, timestamp: Date.now() } });
 
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (activeTab && activeTab.id === tabId) {

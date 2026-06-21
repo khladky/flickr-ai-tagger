@@ -7,6 +7,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     fillTags(msg.tags).then(result => sendResponse(result)).catch(e => sendResponse({ error: e.message }));
     return true;
   }
+  if (msg.type === "FILL_TITLE_DESC") {
+    fillTitleDesc(msg.title, msg.description, msg.titleMode, msg.descMode).then(result => sendResponse(result)).catch(e => sendResponse({ error: e.message }));
+    return true;
+  }
   return false;
 });
 
@@ -146,6 +150,50 @@ async function fillTags(tags) {
   const tagSection = document.querySelector('.tags-section, .tag-text, a.tag-text');
   if (tagSection) tagSection.scrollIntoView({ behavior: "smooth", block: "center" });
 
+  return { ok: true };
+}
+
+async function fillTitleDesc(title, description, titleMode, descMode) {
+  if (titleMode === "skip" && descMode === "skip") {
+    return { error: "Both title and description set to unchanged — nothing to send" };
+  }
+
+  // Click the title to activate the edit form
+  const titleDisplay = document.querySelector('h1.photo-title.editable');
+  if (!titleDisplay) return { error: "Could not find title element" };
+  titleDisplay.click();
+
+  const titleInput = await waitFor('input.edit-photo-title', 3000);
+  if (!titleInput) return { error: "Title input did not appear" };
+
+  if (title && titleMode !== "skip") {
+    let newTitle = title;
+    if (titleMode === "append" && titleInput.value.trim()) {
+      newTitle = titleInput.value.trim() + " — " + title;
+    }
+    titleInput.focus();
+    titleInput.value = newTitle;
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  if (description && descMode !== "skip") {
+    const descInput = document.querySelector('textarea.edit-photo-desc');
+    if (descInput) {
+      let newDesc = description;
+      if (descMode === "append" && descInput.value.trim()) {
+        newDesc = descInput.value.trim() + "\n\n" + description;
+      }
+      descInput.focus();
+      descInput.value = newDesc;
+      descInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 300));
+  const doneBtn = document.querySelector('button.done-editing-title-desc');
+  if (doneBtn) doneBtn.click();
+
+  await new Promise(r => setTimeout(r, 1000));
   return { ok: true };
 }
 
