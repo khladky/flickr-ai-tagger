@@ -93,6 +93,18 @@ Click **Send title & description to Flickr** to apply the changes. The popup sta
 
 Occasionally Gemini does not return a usable title or description. If this happens, click **Regenerate** to try once more.
 
+### Customising the style with a prompt file
+
+By default, the title and description are written in a plain, factual style. To change this — for example to make them funnier, more poetic, more technical, or written in a different language — create a plain text file named exactly `user_gdq.txt` and place it in the same folder as `manifest.json`.
+
+Whatever single instruction you write in that file replaces the opening instruction Gemini is given. The extension always appends its own fixed rules afterwards (correct output format, avoiding hedging language, no raw location data dumps), so the result stays reliable regardless of what you write — only the tone and style are under your control.
+
+When a custom prompt is detected, a brief warning appears in the popup confirming it is in use, so you always know which mode is active.
+
+An example file, `user_gdq.example.txt`, is included in the repository with several ready-to-use presets — sarcastic, dry technical, poetic, written as a five-year-old would describe it, and a different-language example. Copy the line you want into a new file named `user_gdq.txt` to activate it. This example file is never loaded automatically; only a file named exactly `user_gdq.txt` is used.
+
+To go back to the default style, simply delete or rename `user_gdq.txt`.
+
 ## Google Lens
 
 The photo in the popup is clickable — clicking it opens Google Lens in a background browser tab. Google Lens often identifies specific landmarks, monuments and places that Gemini misses, making it a useful supplement to the generated tags. Selecting **AI Mode** in Google Lens gives the most detailed analysis.

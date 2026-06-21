@@ -1,6 +1,28 @@
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const PROMPT_BASE = `Generate Flickr tags for this photo. Reply with ONLY a comma-separated list of tags, nothing else. Rules: 10-20 tags, all lowercase, multi-word tags MUST use hyphens (e.g. long-exposure, black-and-white), prioritise describing the scene, objects, people, activities and atmosphere, include colours only if they are a distinctive feature, mix of broad and specific terms, suitable for general audience, no hashtags, no phrases or sentences.`;
 
+// The describable part of the title/description instruction — can be overridden
+// by placing a user_gdq.txt file in the extension folder.
+const DEFAULT_TITLE_DESC_INSTRUCTION = `Generate a short, natural Flickr photo title and a three-to-four sentence description.`;
+
+// Fixed formatting/quality rules — always appended regardless of custom instruction,
+// to keep the response parseable and avoid known failure modes.
+const TITLE_DESC_RULES = `Reply in EXACTLY this format and nothing else — exactly two lines, no other labels, no extra information:\nTITLE: <title here>\nDESCRIPTION: <description here>\nThe title should be concise (under 10 words), engaging, and not generic. The description should add context a viewer would find interesting — do not just restate the title. Write with confidence — describe what is happening directly, avoid hedging words like "appears to be", "suggests", "possibly", "seems to", "hinting at", "likely". Never use the construction "X suggests Y" or "X hints at Y" for ANY kind of inference — mood, atmosphere, age, history, purpose, or anything else (e.g. do not write "the architectural details suggest historical significance" — instead state it directly, e.g. "the building's classical mouldings reflect its historical significance" or simply describe what is visible without the inference). If you are not confident enough to state something as fact, leave it out entirely rather than hedging or guessing. State things plainly as fact based on what is visible. The description must be normal flowing prose only — never append place names, addresses, or comma-separated location lists at the end. Do not add a location line, hashtags, or any other field.`;
+
+// Attempt to read a user-supplied instruction file bundled in the extension folder.
+// Falls back silently to the built-in default if the file is missing or unreadable.
+async function getTitleDescInstruction() {
+  try {
+    const res = await fetch(chrome.runtime.getURL("user_gdq.txt"));
+    if (!res.ok) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
+    const text = (await res.text()).trim();
+    if (!text) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
+    return { text, isCustom: true };
+  } catch {
+    return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
+  }
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   await clearStalePending();
   await injectIntoExistingTabs();
@@ -192,18 +214,26 @@ async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitl
     }
 
     // Optional: generate title and description
-    let title = null, description = null;
+    let title = null, description = null, usedCustomPrompt = false;
     if (genTitleDesc) {
       try {
-        // Use a single simple location name, not the multi-source dump used for tags
-        const simpleLocation = locationText || flickrLocation || null;
-        const tdLocationHint = simpleLocation
-          ? ` If natural, you may mention that this was taken in or near ${simpleLocation} — but only as part of normal sentence flow, never as a list or label.`
+        // Use only the most specific 1-2 levels, not the full administrative
+        // hierarchy used for tags — a full "Suburb, City, County, Country" string
+        // reads awkwardly when stuffed into a sentence.
+        const fullLocation = locationText || flickrLocation || null;
+        const shortLocation = fullLocation
+          ? fullLocation.split(",").slice(0, 2).join(",").trim()
+          : null;
+        const tdLocationHint = shortLocation
+          ? ` If natural, you may mention that this was taken in or near ${shortLocation} — but only as part of normal sentence flow, never as a list or label. If you do mention it, state it plainly and confidently (e.g. "in Manchester"), never with hedging words like "perhaps", "likely", "probably", or "suggests". If you are not reasonably confident about the location, simply leave it out rather than guessing with a qualifier.`
           : "";
+
+        const { text: tdInstruction, isCustom } = await getTitleDescInstruction();
+        usedCustomPrompt = isCustom;
 
         const tdText = await geminiCall(
           geminiApiKey, base64,
-          `Generate a short, natural Flickr photo title and a three-to-four sentence description.${tdLocationHint} Reply in EXACTLY this format and nothing else — exactly two lines, no other labels, no extra information:\nTITLE: <title here>\nDESCRIPTION: <description here>\nThe title should be concise (under 10 words), engaging, and not generic. The description should add context a viewer would find interesting — do not just restate the title. Write with confidence — describe what is happening directly, avoid hedging words like "appears to be", "suggests", "possibly", "seems to", "hinting at". State things plainly as fact based on what is visible. The description must be normal flowing prose only — never append place names, addresses, or comma-separated location lists at the end. Do not add a location line, hashtags, or any other field.`,
+          `${tdInstruction}${tdLocationHint} ${TITLE_DESC_RULES}`,
           400
         );
         const titleMatch = tdText.match(/TITLE:\s*(.+)/i);
@@ -230,7 +260,7 @@ async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitl
     }
 
     clearTimeout(timeout);
-    await chrome.storage.local.set({ [pageUrl]: { status: "done", tags, title, description, timestamp: Date.now() } });
+    await chrome.storage.local.set({ [pageUrl]: { status: "done", tags, title, description, usedCustomPrompt, timestamp: Date.now() } });
 
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (activeTab && activeTab.id === tabId) {

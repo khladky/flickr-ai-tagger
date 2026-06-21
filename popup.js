@@ -186,9 +186,11 @@ function startPolling() {
     pollTimer = null;
     if (entry.status === "done") {
       showResults(entry.tags);
-      showTitleDesc(entry.title, entry.description);
-      setStatus("✓ Gemini results received", "success");
-      setTimeout(clearStatus, 1500);
+      await showTitleDesc(entry.title, entry.description, entry.usedCustomPrompt);
+      if (!entry.usedCustomPrompt) {
+        setStatus("✓ Gemini results received", "success");
+        setTimeout(clearStatus, 1500);
+      }
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Regenerate";
     } else {
@@ -416,7 +418,7 @@ $("send-titledesc-btn").addEventListener("click", async () => {
   btn.disabled = false;
 });
 
-async function showTitleDesc(title, description) {
+async function showTitleDesc(title, description, usedCustomPrompt) {
   const { titleDesc } = await chrome.storage.local.get("titleDesc");
   if (!title && !description) {
     $("titledesc-wrap").style.display = "none";
@@ -428,6 +430,10 @@ async function showTitleDesc(title, description) {
   $("title-line").value = title || "";
   $("desc-line").value = description || "";
   $("titledesc-wrap").style.display = "block";
+  if (usedCustomPrompt) {
+    setStatus("⚠️ Using custom prompt from user_gdq.txt", "warning");
+    setTimeout(clearStatus, 4000);
+  }
 }
 
 function isZeroOrEmpty(val) {
@@ -723,7 +729,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         showResults(entry.tags);
       }
-      showTitleDesc(entry.title, entry.description);
+      showTitleDesc(entry.title, entry.description, entry.usedCustomPrompt);
       clearStatus();
       $("gen-btn").disabled = false;
       $("gen-btn").textContent = "Regenerate";

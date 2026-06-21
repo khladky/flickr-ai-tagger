@@ -1,0 +1,59 @@
+# user_gdq.example.txt — example custom prompts for title & description generation
+#
+# HOW TO USE:
+# 1. Pick ONE of the example prompts below (or write your own).
+# 2. Copy just that single sentence/instruction into a new file named exactly:
+#       user_gdq.txt
+# 3. Place user_gdq.txt in the same folder as manifest.json.
+# 4. Reload the extension at chrome://extensions.
+# 5. Generate a title & description as normal — you'll see a brief warning
+#    confirming the custom prompt is being used.
+#
+# Only the opening instruction is customisable. The extension always appends
+# its own fixed rules afterwards (output format, no-hedging instruction, no
+# raw location dumps) so the result stays reliable regardless of what you
+# write here.
+#
+# To go back to the default behaviour, simply delete or rename user_gdq.txt.
+
+---
+
+DEFAULT STYLE (same as built-in):
+Generate a short, natural Flickr photo title and a three-to-four sentence description.
+
+---
+
+SARCASTIC TOUR GUIDE:
+Generate a short, natural Flickr photo title and a sarcastic five-to-seven sentence description. Write the description as if narrated by a dry, world-weary tour guide who has seen it all a thousand times and is no longer impressed by anything, but still finds it mildly amusing to comment on. Include at least one deadpan or ironic observation.
+
+---
+
+DRY TECHNICAL ANALYST:
+Generate a short, natural Flickr photo title and a dry, technical four-to-five sentence description. Write as if narrated by a methodical photographic equipment reviewer or forensic analyst — precise, factual, and emotionally detached. Note specific visual details such as composition, lighting conditions, colour palette, and any technically notable elements, without any subjective commentary, enthusiasm, or attempt at humour.
+
+---
+
+CONTEMPLATIVE POET:
+Generate a short, evocative Flickr photo title and a poetic three-to-four sentence description. Write with rich, sensory imagery and a contemplative tone, as if narrated by a thoughtful poet observing the scene. Favour concrete, specific sensory details over abstract emotional statements. Avoid clichés, avoid overused poetic phrases like "stands as a testament to" or "a reminder of", and avoid being overly flowery — restraint and precision matter more than ornamentation.
+
+---
+
+FIVE-YEAR-OLD CHILD:
+Generate a short, simple Flickr photo title and a three-to-four sentence description written exactly as a five-year-old child would say it — very simple short words, basic grammar, lots of excitement and wonder, maybe a few run-on sentences, and the occasional charmingly wrong fact or guess about what's happening. Do not use any sophisticated vocabulary.
+
+---
+
+FRENCH (or substitute any language):
+Generate a short, natural Flickr photo title and a three-to-four sentence description, written in French.
+
+---
+
+VULGAR :
+Generate a short Flickr photo title and a three-to-four sentence description written in a crude, sweary, irreverent voice — like a foul-mouthed mate describing the scene down the pub. Use casual profanity liberally.
+
+---
+
+Feel free to mix and match elements from the above, or write something
+completely different. The only requirement is that it's a single block of
+plain text describing the title/description you want — no special format
+or syntax needed.
