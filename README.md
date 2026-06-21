@@ -91,7 +91,7 @@ Leave both checkboxes for a field unticked to leave that field untouched when se
 
 Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so the title or description can be edited further and sent again — use the arrow keys when you are ready to move to the next photo.
 
-Occasionally Gemini does not return a usable title or description. If this happens, click **Generate** again to try once more.
+Occasionally Gemini does not return a usable title or description. If this happens, click **Regenerate** to try once more.
 
 ## Google Lens
 
