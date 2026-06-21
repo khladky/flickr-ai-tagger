@@ -99,11 +99,11 @@ By default, the title and description are written in a plain, factual style. To 
 
 Whatever single instruction you write in that file replaces the opening instruction Gemini is given. The extension always appends its own fixed rules afterwards (correct output format, avoiding hedging language, no raw location data dumps), so the result stays reliable regardless of what you write — only the tone and style are under your control.
 
-When a custom prompt is detected, a brief warning appears in the popup confirming it is in use, so you always know which mode is active.
-
 An example file, `user_gdq.example.txt`, is included in the repository with several ready-to-use presets — sarcastic, dry technical, poetic, written as a five-year-old would describe it, and a different-language example. Copy the line you want into a new file named `user_gdq.txt` to activate it. This example file is never loaded automatically; only a file named exactly `user_gdq.txt` is used.
 
-To go back to the default style, simply delete or rename `user_gdq.txt`.
+**Turning the custom prompt on or off:** once `user_gdq.txt` exists, a checkbox labelled **"Use custom prompt from user_gdq.txt"** appears underneath "Generate title & description" in the popup. The first time it appears it is ticked automatically if a non-empty `user_gdq.txt` file is found, otherwise left unticked. After that, your choice is remembered — tick or untick it any time to switch between your custom style and the default, without needing to touch the file itself. The `user_gdq.txt` file is only read at all when the checkbox is ticked.
+
+When the custom prompt is actually used, a brief warning appears in the popup confirming it, so you always know which mode is active.
 
 ## Google Lens
 

@@ -11,7 +11,8 @@ const TITLE_DESC_RULES = `Reply in EXACTLY this format and nothing else — exac
 
 // Attempt to read a user-supplied instruction file bundled in the extension folder.
 // Falls back silently to the built-in default if the file is missing or unreadable.
-async function getTitleDescInstruction() {
+async function getTitleDescInstruction(useCustomPrompt) {
+  if (!useCustomPrompt) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
   try {
     const res = await fetch(chrome.runtime.getURL("user_gdq.txt"));
     if (!res.ok) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
@@ -155,7 +156,7 @@ async function geminiCall(apiKey, base64, prompt, maxTokens) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitleDesc, tabId, pageUrl }) {
+async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitleDesc, useCustomPrompt, tabId, pageUrl }) {
   chrome.action.setBadgeText({ text: "…", tabId });
   chrome.action.setBadgeBackgroundColor({ color: "#4285f4", tabId });
 
@@ -228,7 +229,7 @@ async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitl
           ? ` If natural, you may mention that this was taken in or near ${shortLocation} — but only as part of normal sentence flow, never as a list or label. If you do mention it, state it plainly and confidently (e.g. "in Manchester"), never with hedging words like "perhaps", "likely", "probably", or "suggests". If you are not reasonably confident about the location, simply leave it out rather than guessing with a qualifier.`
           : "";
 
-        const { text: tdInstruction, isCustom } = await getTitleDescInstruction();
+        const { text: tdInstruction, isCustom } = await getTitleDescInstruction(useCustomPrompt);
         usedCustomPrompt = isCustom;
 
         const tdText = await geminiCall(

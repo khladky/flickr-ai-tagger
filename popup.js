@@ -216,9 +216,10 @@ async function startGeneration(photoUrl, coords, flickrLocation, tabId) {
     return;
   }
 
-  const { genTags, titleDesc } = await chrome.storage.local.get(["genTags", "titleDesc"]);
+  const { genTags, titleDesc, useCustomPrompt } = await chrome.storage.local.get(["genTags", "titleDesc", "useCustomPrompt"]);
   const wantTags = genTags === undefined ? true : !!genTags;
   const wantTitleDesc = !!titleDesc;
+  const wantCustomPrompt = !!useCustomPrompt;
 
   if (!wantTags && !wantTitleDesc) {
     setStatus("⚠️ Nothing selected to generate — tick Generate Flickr tags and/or Generate title & description", "warning");
@@ -232,7 +233,7 @@ async function startGeneration(photoUrl, coords, flickrLocation, tabId) {
   try {
     const base64 = await resizeToBase64(photoUrl);
     await chrome.storage.local.set({ [pageUrl]: { status: "pending", tags: [], timestamp: Date.now() } });
-    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, flickrLocation, genTags: wantTags, genTitleDesc: wantTitleDesc, tabId, pageUrl });
+    chrome.runtime.sendMessage({ type: "GENERATE", base64, coords, flickrLocation, genTags: wantTags, genTitleDesc: wantTitleDesc, useCustomPrompt: wantCustomPrompt, tabId, pageUrl });
     setStatus("⚡ Asking Gemini — you can close this popup", "warning");
     $("gen-btn").textContent = "Asking Gemini…";
     startPolling();
@@ -325,11 +326,38 @@ $("exif-toggle").addEventListener("change", () => {
 });
 
 // Title & description toggle
+function updateCustomPromptRowVisibility() {
+  $("custom-prompt-row").style.display = $("titledesc-toggle").checked ? "flex" : "none";
+}
+
 chrome.storage.local.get("titleDesc", ({ titleDesc }) => {
   $("titledesc-toggle").checked = !!titleDesc;
+  updateCustomPromptRowVisibility();
 });
 $("titledesc-toggle").addEventListener("change", () => {
   chrome.storage.local.set({ titleDesc: $("titledesc-toggle").checked });
+  updateCustomPromptRowVisibility();
+});
+
+// Custom prompt (user_gdq.txt) toggle
+(async () => {
+  const { useCustomPrompt } = await chrome.storage.local.get("useCustomPrompt");
+  if (useCustomPrompt !== undefined) {
+    // User has an explicit saved preference — use it regardless of file presence
+    $("custom-prompt-toggle").checked = useCustomPrompt;
+  } else {
+    // First time — default to checked only if user_gdq.txt actually exists
+    try {
+      const res = await fetch(chrome.runtime.getURL("user_gdq.txt"));
+      const text = res.ok ? (await res.text()).trim() : "";
+      $("custom-prompt-toggle").checked = !!text;
+    } catch {
+      $("custom-prompt-toggle").checked = false;
+    }
+  }
+})();
+$("custom-prompt-toggle").addEventListener("change", () => {
+  chrome.storage.local.set({ useCustomPrompt: $("custom-prompt-toggle").checked });
 });
 
 $("copy-title-btn").addEventListener("click", async () => {
