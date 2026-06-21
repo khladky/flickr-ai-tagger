@@ -78,7 +78,7 @@ The left and right arrow keys can be used at any time while the popup is open to
 
 ## Title and description
 
-If "Generate title & description" was ticked, a title box and a description box will appear once Gemini has finished. Both are directly editable — click in and change the wording before sending if you like.
+If "Generate title & description" was ticked, a title box and a description box will appear once Gemini has finished. Both are directly editable — click in and change the wording before sending if you are unhappy with the quaint AI language.
 
 Two small 📋 buttons let you copy the title or description individually.
 
@@ -89,7 +89,7 @@ For each of the title and the description, two checkboxes control what happens w
 
 Leave both checkboxes for a field unticked to leave that field untouched when sending. Ticking one automatically unticks the other for that field. Your choice is remembered between photos.
 
-Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so the title or description can be edited further and sent again if needed — use the arrow keys when you are ready to move to the next photo.
+Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so the title or description can be edited further and sent again — use the arrow keys when you are ready to move to the next photo.
 
 ## Google Lens
 
