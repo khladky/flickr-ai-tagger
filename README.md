@@ -91,6 +91,8 @@ Leave both checkboxes for a field unticked to leave that field untouched when se
 
 Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so the title or description can be edited further and sent again — use the arrow keys when you are ready to move to the next photo.
 
+Occasionally Gemini does not return a usable title or description. If this happens, click **Generate** again to try once more.
+
 ## Google Lens
 
 The photo in the popup is clickable — clicking it opens Google Lens in a background browser tab. Google Lens often identifies specific landmarks, monuments and places that Gemini misses, making it a useful supplement to the generated tags. Selecting **AI Mode** in Google Lens gives the most detailed analysis.
