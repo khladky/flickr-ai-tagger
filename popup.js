@@ -449,7 +449,8 @@ $("send-titledesc-btn").addEventListener("click", async () => {
 async function showTitleDesc(title, description, usedCustomPrompt) {
   const { titleDesc } = await chrome.storage.local.get("titleDesc");
   if (!title && !description) {
-    $("titledesc-wrap").style.display = "none";
+    $("title-line").value = "";
+    $("desc-line").value = "";
     if (titleDesc) {
       setStatus("⚠️ Gemini did not return a title/description — try regenerating", "warning");
     }
@@ -457,7 +458,6 @@ async function showTitleDesc(title, description, usedCustomPrompt) {
   }
   $("title-line").value = title || "";
   $("desc-line").value = description || "";
-  $("titledesc-wrap").style.display = "block";
   if (usedCustomPrompt) {
     setStatus("⚠️ Using custom prompt from user_gdq.txt", "warning");
     setTimeout(clearStatus, 4000);
