@@ -48,8 +48,13 @@ Generate a short, natural Flickr photo title and a three-to-four sentence descri
 
 ---
 
+CRITICAL:
+Generate a short, natural Flickr photo title and a five-to-seven sentence critique of the image. Critisize both the technical and the esthetic aspects of the image. Be harsh, honest and completely unforgiving.
+
+---
+
 VULGAR :
-Generate a short Flickr photo title and a three-to-four sentence description written in a crude, sweary, irreverent voice — like a foul-mouthed mate describing the scene down the pub. Use casual profanity liberally.
+Generate a short Flickr photo title and a three-to-four sentence description written in a crude, sweary, irreverent voice — like a foul-mouthed mate describing the scene down the pub.
 
 ---
 
