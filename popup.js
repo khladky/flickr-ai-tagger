@@ -199,6 +199,8 @@ function startPolling() {
         ? "Gemini error — invalid API key, check your key"
         : errorType === "rate_limit"
         ? "Gemini rate limit reached — try again in a moment"
+        : errorType === "timeout"
+        ? "Gemini timed out — try again"
         : "Gemini error — server busy, try again";
       setStatus(errorMsg, "error");
       $("gen-btn").disabled = false;

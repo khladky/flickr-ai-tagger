@@ -133,22 +133,33 @@ function stripTrailingLocationJunk(desc) {
 }
 
 async function geminiCall(apiKey, base64, prompt, maxTokens) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: "image/jpeg", data: base64 } },
-            { text: prompt }
-          ]
-        }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
-      })
-    }
-  );
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  let res;
+  try {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: "image/jpeg", data: base64 } },
+              { text: prompt }
+            ]
+          }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
+        })
+      }
+    );
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("timeout");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   if (res.status === 401 || res.status === 403) throw new Error("auth");
   if (res.status === 429) throw new Error("rate_limit");
   if (!res.ok) throw new Error("server");
@@ -169,10 +180,10 @@ async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitl
   }
 
   const timeout = setTimeout(async () => {
-    await chrome.storage.local.set({ [pageUrl]: { status: "error", tags: [], timestamp: Date.now() } });
+    await chrome.storage.local.set({ [pageUrl]: { status: "error", errorType: "timeout", tags: [], timestamp: Date.now() } });
     chrome.action.setBadgeText({ text: "!", tabId });
     chrome.action.setBadgeBackgroundColor({ color: "#e53e3e", tabId });
-  }, 60000);
+  }, 30000);
 
   try {
     // Step 1: reverse geocode via Nominatim
@@ -256,6 +267,7 @@ async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitl
           description = stripTrailingLocationJunk(lines.join(" ").trim());
         }
       } catch (e) {
+        if (e.message === "timeout") throw e; // let outer catch handle timeout
         // Non-fatal — tags still succeed even if title/description fails
       }
     }
@@ -271,7 +283,7 @@ async function handleGenerate({ base64, coords, flickrLocation, genTags, genTitl
 
   } catch (e) {
     clearTimeout(timeout);
-    const errorType = ["auth", "rate_limit", "server"].includes(e.message) ? e.message : "server";
+    const errorType = ["auth", "rate_limit", "server", "timeout"].includes(e.message) ? e.message : "server";
     await chrome.storage.local.set({ [pageUrl]: { status: "error", errorType, tags: [], timestamp: Date.now() } });
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (activeTab && activeTab.id === tabId) {
