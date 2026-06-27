@@ -1,1 +1,0 @@
-Generate a short, natural Flickr photo title and a three-to-four sentence description.
