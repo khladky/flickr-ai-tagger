@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Flickr AI Tagger — Custom Prompt</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+    h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 24px; }
+    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      font-family: monospace;
+      font-size: 13px;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    textarea:focus { outline: 2px solid #4285f4; border-color: transparent; }
+    .note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+      margin-bottom: 20px;
+    }
+    .buttons { display: flex; gap: 10px; margin-bottom: 24px; }
+    button {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #save-btn { background: #4285f4; color: #fff; }
+    #save-btn:hover { background: #3367d6; }
+    #reset-btn { background: #f1f1f1; color: #333; }
+    #reset-btn:hover { background: #e0e0e0; }
+    #status { font-size: 13px; color: #276749; font-weight: 500; }
+    h2 { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #444; }
+    .presets { display: flex; flex-direction: column; gap: 8px; }
+    .preset {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #333;
+      text-align: left;
+      font-family: inherit;
+    }
+    .preset:hover { background: #eef2ff; border-color: #4285f4; }
+    .preset strong { display: block; font-size: 13px; margin-bottom: 2px; color: #111; }
+  </style>
+</head>
+<body>
+  <h1>Custom Prompt</h1>
+  <p class="subtitle">This is the opening instruction sent to Gemini when generating titles and descriptions. Edit it to change the tone or style of the output. The extension's own formatting rules are always added automatically — you only control the style here.</p>
+  <p class="subtitle" style="margin-top:8px;">Edit the prompt below and click <strong>Save</strong> — the tab will close and your prompt will be used next time you generate a title and description. To go back to the built-in default at any time, click <strong>Reset to default</strong>.</p>
+
+  <label for="prompt-text">Your prompt</label>
+  <textarea id="prompt-text" placeholder="e.g. Write the title and description as a sarcastic tour guide who has seen everything and is mildly amused."></textarea>
+  <p class="note">Leave blank to use the default: generate a short Flickr photo title and a three to four sentence description of the main subject of the image only, using simple language, omitting location information.</p>
+
+  <div class="buttons">
+    <button id="save-btn">Save</button>
+    <button id="reset-btn">Reset to default</button>
+    <span id="status"></span>
+  </div>
+
+  <h2>Presets — click to use</h2>
+  <div class="presets">
+    <button class="preset" data-prompt="Write the title and description as a dry, world-weary tour guide who has seen it all a thousand times and finds it mildly amusing.">
+      <strong>Sarcastic tour guide</strong>
+      Dry, world-weary, mildly amused commentary.
+    </button>
+    <button class="preset" data-prompt="Write the title and description as a methodical forensic analyst — precise, factual, emotionally detached. Note composition, lighting, colour palette, and technically notable elements.">
+      <strong>Dry technical analyst</strong>
+      Precise, factual, emotionally detached.
+    </button>
+    <button class="preset" data-prompt="Write the title and description as short poetry with rich sensory imagery and a contemplative tone. Favour concrete specific details over abstract emotional statements.">
+      <strong>Poetic</strong>
+      Rich imagery, contemplative, specific details.
+    </button>
+    <button class="preset" data-prompt="Write the title and description as a five-year-old child would describe the photo — very simple words, lots of excitement, and the occasional charmingly wrong guess about what is happening.">
+      <strong>Five-year-old</strong>
+      Simple words, excitement, charming guesses.
+    </button>
+    <button class="preset" data-prompt="Écris le titre et la description en français, dans un style naturel et descriptif.">
+      <strong>French</strong>
+      Title and description in French.
+    </button>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

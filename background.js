@@ -2,8 +2,7 @@ const GEMINI_MODEL = "gemini-3.1-flash-lite";
 const PROMPT_BASE = `Generate Flickr tags for this photo. Reply with ONLY a comma-separated list of tags, nothing else. Rules: 10-20 tags, all lowercase, multi-word tags MUST use hyphens (e.g. long-exposure, black-and-white), prioritise describing the scene, objects, people, activities and atmosphere, include colours only if they are a distinctive feature, mix of broad and specific terms, suitable for general audience, no hashtags, no phrases or sentences.`;
 
 // The describable part of the title/description instruction — can be overridden
-// by placing a user_gdq.txt file in the extension folder.
-const DEFAULT_TITLE_DESC_INSTRUCTION = `Generate a short, natural Flickr photo title and a three-to-four sentence description.`;
+const DEFAULT_TITLE_DESC_INSTRUCTION = `Generate a short Flickr photo title and a three to four sentence description of the main subject of the image only. Use simple language. Omit any location information.`;
 
 // Fixed formatting/quality rules — always appended regardless of custom instruction,
 // to keep the response parseable and avoid known failure modes.
@@ -13,15 +12,9 @@ const TITLE_DESC_RULES = `Reply in EXACTLY this format and nothing else — exac
 // Falls back silently to the built-in default if the file is missing or unreadable.
 async function getTitleDescInstruction(useCustomPrompt) {
   if (!useCustomPrompt) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
-  try {
-    const res = await fetch(chrome.runtime.getURL("user_gdq.txt"));
-    if (!res.ok) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
-    const text = (await res.text()).trim();
-    if (!text) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
-    return { text, isCustom: true };
-  } catch {
-    return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
-  }
+  const { customPrompt } = await chrome.storage.local.get("customPrompt");
+  if (!customPrompt || !customPrompt.trim()) return { text: DEFAULT_TITLE_DESC_INSTRUCTION, isCustom: false };
+  return { text: customPrompt.trim(), isCustom: true };
 }
 
 chrome.runtime.onInstalled.addListener(async () => {

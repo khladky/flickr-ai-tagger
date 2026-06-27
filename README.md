@@ -27,7 +27,7 @@ When a new version is released, download the ZIP again from GitHub, extract it, 
 2. Click **Get API key** and create a new key
 3. Copy the key — you will need it the first time you open the extension
 
-The free tier allows a small number of requests per day. For regular use, add billing at [aistudio.google.com](https://aistudio.google.com) — costs are very small (fractions of a penny per photo) and a small amount of credit (£10 minimum) goes a very long way.
+The free tier allows a small number of requests per day. For regular use, add billing at [aistudio.google.com](https://aistudio.google.com) — costs are very small (fractions of a penny per photo) and a small amount of credit goes a very long way.
 
 ## Basic usage
 
@@ -45,8 +45,8 @@ The popup can be closed while Gemini is working — a blue badge appears on the 
 Three independent options appear at the top of the popup:
 
 - **Generate Flickr tags** — ticked by default. Asks Gemini to suggest tags describing the scene, objects, people, activities and location.
-- **Include camera and lens data as tags** — reads the photo's embedded EXIF data and adds technical tags. No Gemini call needed, and this can be ticked or unticked at any time — the tags appear or disappear immediately, no need to reload the page.
-- **Generate title & description** — asks Gemini for a short title and a few sentences of description for the photo. This is a separate API call from tag generation, so it doubles the number of Gemini requests used per photo when ticked. In practice the cost difference is negligible — still a small fraction of a penny per photo.
+- **Include camera and lens data as tags** — reads the photo's embedded EXIF data and adds technical tags. No Gemini call needed, and this can be ticked or unticked at any time — the tags appear or disappear immediately without reloading the page.
+- **Generate title & description** — asks Gemini for a short title and a few sentences of description for the photo. This is a separate API call from tag generation, so it doubles the number of Gemini requests used per photo when ticked. In practice the cost difference is negligible.
 
 Untick all of "Generate Flickr tags" and "Generate title & description" and the Generate button will show a warning rather than doing nothing silently — there has to be something for Gemini to actually do.
 
@@ -54,56 +54,54 @@ Untick all of "Generate Flickr tags" and "Generate title & description" and the 
 
 Tags are colour coded:
 
-- **Blue** — already on this photo in Flickr. Shown for reference, not included in the copy. Tags already on Flickr can only be removed via the photo's own tag editor on the Flickr photo page, not through this extension.
+- **Blue** — already on this photo in Flickr. Shown for reference, not included in the copy. Tags already on Flickr can only be removed via the photo's own tag editor, not through this extension.
 - **Yellow** — freshly suggested by Gemini. Remove any you don't want by clicking **×**.
 - **Purple** — tags you have added manually.
 - **Purple (labelled "Added from EXIF")** — tags automatically read from the photo's camera data.
 - **Grey italic** — a tag currently being edited.
 
-**To add a tag** — type in the box at the bottom of the tag panel and press Enter or click **Add**. Spaces are converted to hyphens automatically. If the entered tag already exists — either already on Flickr or in the Gemini suggestions — it will not be added again, and the existing tag will flash red to show you where it is.
+**To add a tag** — type in the box at the bottom of the tag panel and press Enter or click **Add**. Spaces are converted to hyphens automatically. If the entered tag already exists it will not be added again, and the existing tag will flash red to show you where it is.
 
-**To edit a tag** — Alt+click it. It turns grey in place and its text appears in the add box for editing. Press Enter to apply the edit, press Escape or click the **×** on the grey tag to cancel and restore the original.
+**To edit a tag** — Alt+click it. It turns grey in place and its text appears in the add box for editing. Press Enter to apply, Escape or click the **×** to cancel.
 
-**To regenerate tags for current image** — click **Generate** again to discard the current suggestions and get a fresh set from Gemini. Any tags you added manually are preserved. If the new set is worse than the previous one, Alt+click the Generate button to go back to what you had before.
+**To regenerate tags** — click **Generate** again to discard the current suggestions and get a fresh set from Gemini. Tags you added manually are preserved. If the new set is worse, Alt+click the Generate button to go back to the previous set.
 
 ## Sending tags to Flickr
 
 A small 📋 button next to the tag listing box copies the tag list to your clipboard at any time.
 
-A **Send tags to Flickr** button also appears — clicking it opens Flickr's tag editor, pastes the tags, and submits them automatically. Once sent successfully, those tags move into the blue "Already on Flickr" section in the popup, reflecting what is now actually on the photo.
+A **Send tags to Flickr** button also appears — clicking it opens Flickr's tag editor, pastes the tags, and submits them automatically. Once sent successfully, those tags move into the blue "Already on Flickr" section in the popup.
 
-The left and right arrow keys can be used at any time while the popup is open to navigate to the previous or next photo in your Flickr stream — pressing one closes the popup and moves to the next photo automatically. This is disabled while typing in a tag, title or description field so the arrow keys move the cursor as normal.
-
-**Note:** Once tags have been sent to Flickr they can only be removed via the photo's own tag editor on the Flickr photo page, not through this extension.
+The left and right arrow keys can be used at any time while the popup is open to navigate to the previous or next photo in your Flickr stream — pressing one closes the popup and moves to the next photo automatically. This is disabled while typing in a text field so arrow keys move the cursor as normal.
 
 ## Title and description
 
-If "Generate title & description" was ticked, a title box and a description box will appear once Gemini has finished. Both are directly editable — click in and change the wording before sending if you are unhappy with the quaint AI language.
+If "Generate title & description" was ticked, a title box and a description box will appear once Gemini has finished. Both are directly editable before sending.
 
 Two small 📋 buttons let you copy the title or description individually.
 
-For each of the title and the description, two checkboxes control what happens when you send to Flickr:
+For each field, two checkboxes control what happens when you send to Flickr:
 
 - **Append** (default) — adds the new text after whatever is already there.
 - **Replace** — overwrites the existing title or description entirely.
 
-Leave both checkboxes for a field unticked to leave that field untouched when sending. Ticking one automatically unticks the other for that field. Your choice is remembered between photos.
+Leave both checkboxes for a field unticked to leave that field untouched when sending. Your choice is remembered between photos.
 
-Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so the title or description can be edited further and sent again — use the arrow keys when you are ready to move to the next photo.
+Click **Send title & description to Flickr** to apply the changes. The popup stays open afterwards so you can edit further and send again. Use the arrow keys when you are ready to move to the next photo.
 
 Occasionally Gemini does not return a usable title or description. If this happens, click **Regenerate** to try once more.
 
-### Customising the style with a prompt file
+### Customising the style
 
-By default, the title and description are written in a plain, factual style. To change this — for example to make them funnier, more poetic, more technical, or written in a different language — create a plain text file named exactly `user_gdq.txt` and place it in the same folder as `manifest.json`.
+By default, the title and description are written in a plain, factual style — a short title and three to four sentences describing the main subject, in simple language, without location information.
 
-Whatever single instruction you write in that file replaces the opening instruction Gemini is given. The extension always appends its own fixed rules afterwards (correct output format, avoiding hedging language, no raw location data dumps), so the result stays reliable regardless of what you write — only the tone and style are under your control.
+To change the style, tick **Use custom prompt** in the popup (visible when "Generate title & description" is ticked), then click **Edit** next to it. This opens a settings tab where you can write any instruction you like — for example to make the output funnier, more poetic, more technical, or in a different language.
 
-An example file, `user_gdq.example.txt`, is included in the repository with several ready-to-use presets — sarcastic, dry technical, poetic, written as a five-year-old would describe it, and a different-language example. Copy the line you want into a new file named `user_gdq.txt` to activate it. This example file is never loaded automatically; only a file named exactly `user_gdq.txt` is used.
+The settings tab shows the prompt currently in use. Edit the text and click **Save** — the tab closes automatically and your prompt will be used next time you generate. Click **Reset to default** at any time to go back to the built-in default. Five ready-to-use presets are also available to click and try: sarcastic tour guide, dry technical analyst, poetic, five-year-old, and French.
 
-**Turning the custom prompt on or off:** once `user_gdq.txt` exists, a checkbox labelled **"Use custom prompt from user_gdq.txt"** appears underneath "Generate title & description" in the popup. The first time it appears it is ticked automatically if a non-empty `user_gdq.txt` file is found, otherwise left unticked. After that, your choice is remembered — tick or untick it any time to switch between your custom style and the default, without needing to touch the file itself. The `user_gdq.txt` file is only read at all when the checkbox is ticked.
+The extension always appends its own formatting and reliability rules after your instruction — only the tone and style are under your control.
 
-When the custom prompt is actually used, a brief warning appears in the popup confirming it, so you always know which mode is active.
+When a custom prompt is in use, a brief notice appears in the popup confirming it, so you always know which mode is active.
 
 ## Google Lens
 
@@ -132,19 +130,17 @@ Tick **Include camera and lens data as tags** to automatically add technical tag
 - ISO (e.g. `iso-125`)
 - `long-exposure` — added automatically if shutter speed is 1 second or longer
 
-All EXIF tags are formatted to work correctly with Flickr's search. Double-clicking any EXIF tag on the Flickr photo page will search for other photos with that camera, lens, aperture or shutter speed etc. tag.
-
-Individual EXIF tags can be removed by clicking **×** on them before they are sent to Flickr. If the photo has no EXIF data, or the owner has hidden it, a brief message will say "No camera data available for this photo."
+All EXIF tags are formatted to work correctly with Flickr's search. Individual EXIF tags can be removed by clicking **×** on them before they are sent to Flickr. If the photo has no EXIF data, or the owner has hidden it, a brief message will appear.
 
 ## Keyboard shortcut
 
 The extension can be opened with **Alt+F** when on a Flickr photo page. This can be changed at `chrome://extensions/shortcuts`.
 
-If your mouse has extra buttons, you can map one of them to **Alt+F** using free software such as [X-Mouse Button Control](https://www.highrez.co.uk/downloads/xmousebuttoncontrol.htm). This lets you open the extension with a single mouse button click. X-Mouse Button Control supports per-application profiles, so the mapping can be set to apply only when Chrome is active, leaving the button's normal behaviour unchanged in other applications.
+If your mouse has extra buttons, you can map one of them to **Alt+F** using free software such as [X-Mouse Button Control](https://www.highrez.co.uk/downloads/xmousebuttoncontrol.htm). This lets you open the extension with a single mouse button click, with the mapping applying only when Chrome is active.
 
 ## Firefox
 
-The extension includes Firefox compatibility settings. Firefox support is experimental and has not been fully tested. If you try it and find issues, please raise them in the GitHub issues tab.
+The extension includes Firefox compatibility settings. Firefox support is experimental and has not been fully tested.
 
 **Firefox installation:**
 1. Go to `about:debugging#/runtime/this-firefox`

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Flickr AI Tagger Gemini",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "AI tag suggestions via Google Gemini \u2014 generates in background, popup can close",
   "permissions": [
     "activeTab",
@@ -57,5 +57,6 @@
       "strict_min_version": "128.0",
       "id": "flickr-ai-tagger-gemini@karel"
     }
-  }
+  },
+  "options_page": "options.html"
 }

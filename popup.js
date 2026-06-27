@@ -341,25 +341,23 @@ $("titledesc-toggle").addEventListener("change", () => {
   updateCustomPromptRowVisibility();
 });
 
-// Custom prompt (user_gdq.txt) toggle
+// Custom prompt toggle
 (async () => {
-  const { useCustomPrompt } = await chrome.storage.local.get("useCustomPrompt");
+  const { useCustomPrompt, customPrompt } = await chrome.storage.local.get(["useCustomPrompt", "customPrompt"]);
   if (useCustomPrompt !== undefined) {
-    // User has an explicit saved preference — use it regardless of file presence
     $("custom-prompt-toggle").checked = useCustomPrompt;
   } else {
-    // First time — default to checked only if user_gdq.txt actually exists
-    try {
-      const res = await fetch(chrome.runtime.getURL("user_gdq.txt"));
-      const text = res.ok ? (await res.text()).trim() : "";
-      $("custom-prompt-toggle").checked = !!text;
-    } catch {
-      $("custom-prompt-toggle").checked = false;
-    }
+    // First time — default to checked only if a prompt is already stored
+    $("custom-prompt-toggle").checked = !!(customPrompt && customPrompt.trim());
   }
 })();
 $("custom-prompt-toggle").addEventListener("change", () => {
   chrome.storage.local.set({ useCustomPrompt: $("custom-prompt-toggle").checked });
+});
+
+$("edit-prompt-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.runtime.openOptionsPage();
 });
 
 $("copy-title-btn").addEventListener("click", async () => {
@@ -461,7 +459,7 @@ async function showTitleDesc(title, description, usedCustomPrompt) {
   $("title-line").value = title || "";
   $("desc-line").value = description || "";
   if (usedCustomPrompt) {
-    setStatus("⚠️ Using custom prompt from user_gdq.txt", "warning");
+    setStatus("⚠️ Using custom prompt", "warning");
     setTimeout(clearStatus, 4000);
   }
 }
